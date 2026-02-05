@@ -238,6 +238,34 @@ torch.save({
 }, "checkpoint.pth")
 ```
 
+## 더 깊이 알아보기
+
+### PyTorch의 탄생 이야기 — "우리가 쓰려고 만든 도구"
+
+> 💡 **알고 계셨나요?**: PyTorch를 만든 수미스 친탈라(Soumith Chintala)는 미국 대학원 12곳에 모두 떨어진 경험이 있습니다.
+
+인도 출신의 친탈라는 미국 대학원 입시에서 12곳 모두 불합격이라는 좌절을 겪었지만, 결국 NYU에서 얀 르쿤(Yann LeCun)의 연구실에 합류하게 됩니다. 이후 Meta(당시 Facebook)의 AI 연구소 FAIR에서 PyTorch를 개발했죠. 그가 남긴 유명한 말이 있습니다: **"We built it for ourselves."** (우리가 쓰려고 만든 거예요.)
+
+**TensorFlow와의 전쟁**: 2016년 PyTorch가 등장했을 때, Google의 TensorFlow가 시장을 지배하고 있었습니다. TensorFlow는 **정적 계산 그래프(Static Graph)**를 사용했는데, 이는 먼저 전체 계산 과정을 정의한 뒤 실행하는 방식이었습니다. PyTorch는 반대로 **동적 계산 그래프(Dynamic Graph, Eager Execution)**를 채택했어요. 코드를 한 줄씩 실행하면서 바로 결과를 확인할 수 있고, `print()`로 중간값을 찍어볼 수 있고, Python 디버거(pdb)로 디버깅할 수 있었죠. 연구자들에게 이것은 혁명적이었습니다.
+
+**TensorFlow의 변심**: PyTorch의 인기가 폭발적으로 늘어나자, 결국 TensorFlow 2.0(2019)은 **Eager Execution을 기본 모드로 채택**했습니다. 경쟁자의 핵심 설계 철학을 받아들인 것이죠. 이는 PyTorch의 접근법이 옳았다는 것을 사실상 인정한 셈입니다.
+
+**Torch에서 PyTorch로**: PyTorch의 전신은 Lua 언어 기반의 **Torch**였습니다. 하지만 Python 생태계의 압도적인 편의성 앞에 2018년 Lua Torch는 개발이 중단되었고, PyTorch가 완전히 자리를 잡았습니다. 현재 학술 논문의 약 80% 이상이 PyTorch를 사용하고 있을 정도로, 딥러닝 연구의 사실상 표준이 되었습니다.
+
+## 흔한 오해와 팁
+
+> ⚠️ **흔한 오해**: "PyTorch는 연구용, TensorFlow는 배포(프로덕션)용"
+>
+> 2019~2020년까지는 어느 정도 맞는 말이었지만, 지금은 아닙니다. PyTorch도 **TorchScript**, **ONNX 변환**, **torch.compile** (PyTorch 2.0), **TorchServe** 등을 통해 프로덕션 배포가 충분히 가능합니다. Tesla의 자율주행, Meta의 추천 시스템 등 대규모 프로덕션 환경에서도 PyTorch가 사용되고 있어요.
+
+> ⚠️ **흔한 오해**: "`model.eval()`은 선택사항이다"
+>
+> **절대 선택이 아닙니다!** `model.eval()`을 호출하지 않으면 Dropout이 계속 활성화되어 추론할 때마다 결과가 달라지고, BatchNorm이 미니배치 통계를 사용하여 배치 크기에 따라 결과가 변합니다. 학습 시에는 `model.train()`, 평가/추론 시에는 반드시 `model.eval()`을 호출하세요. 이것을 빼먹는 것은 PyTorch 초보자가 가장 많이 하는 실수 중 하나입니다.
+
+> 🔥 **실무 팁**: `torch.no_grad()`는 단순 최적화가 아닌 필수
+>
+> "메모리를 좀 아끼는 정도겠지"라고 생각할 수 있지만, `torch.no_grad()` 없이 추론하면 PyTorch가 모든 연산의 **계산 그래프를 계속 쌓습니다.** 대량의 데이터를 추론할 때 메모리 사용량이 기하급수적으로 늘어나 **Out of Memory 에러**가 발생할 수 있어요. 추론/평가 코드에서는 항상 `with torch.no_grad():` 블록 안에서 실행하세요.
+
 ## 핵심 정리
 
 | 개념 | 설명 |
