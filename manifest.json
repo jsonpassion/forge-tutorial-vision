@@ -1,127 +1,715 @@
 {
-  "title": "컴퓨터 비전 튜토리얼",
-  "subtitle": "초급자를 위한 단계별 학습 가이드",
-  "version": "1.0.0",
+  "title": "컴퓨터 비전 마스터 가이드",
+  "subtitle": "픽셀의 이해부터 멀티모달 AI까지 완전 정복",
+  "version": "2.0.0",
   "lastUpdated": "2026-02-05",
   "language": "ko",
   "author": "Jason",
   "chapters": [
     {
-      "id": "01-basics",
-      "title": "기초 이론",
-      "description": "이미지의 본질과 기본 처리",
+      "id": "01-foundations",
+      "title": "이미지의 이해",
+      "description": "디지털 이미지의 본질과 기초 개념",
       "sections": [
         {
           "id": "01-what-is-image",
           "title": "이미지란 무엇인가",
-          "file": "01-basics/01-what-is-image.md"
+          "file": "01-foundations/01-what-is-image.md",
+          "description": "픽셀, 해상도, 비트 깊이의 이해"
         },
         {
-          "id": "02-pixels-and-channels",
-          "title": "픽셀과 채널",
-          "file": "01-basics/02-pixels-and-channels.md"
+          "id": "02-color-spaces",
+          "title": "색상 공간의 이해",
+          "file": "01-foundations/02-color-spaces.md",
+          "description": "RGB, HSV, LAB 등 다양한 색상 표현 방식"
         },
         {
-          "id": "03-filters",
-          "title": "필터의 개념",
-          "file": "01-basics/03-filters.md"
+          "id": "03-image-formats",
+          "title": "이미지 형식과 압축",
+          "file": "01-foundations/03-image-formats.md",
+          "description": "JPEG, PNG, WebP 등 형식별 특성과 압축 원리"
         }
       ]
     },
     {
-      "id": "02-cnn",
+      "id": "02-classical-cv",
+      "title": "전통적 컴퓨터 비전",
+      "description": "딥러닝 이전의 이미지 처리 기법",
+      "sections": [
+        {
+          "id": "01-opencv-basics",
+          "title": "OpenCV 시작하기",
+          "file": "02-classical-cv/01-opencv-basics.md",
+          "description": "OpenCV 설치와 기본 이미지 입출력"
+        },
+        {
+          "id": "02-filters-kernels",
+          "title": "필터와 커널",
+          "file": "02-classical-cv/02-filters-kernels.md",
+          "description": "블러, 샤프닝, 에지 검출 필터"
+        },
+        {
+          "id": "03-edge-detection",
+          "title": "에지 검출",
+          "file": "02-classical-cv/03-edge-detection.md",
+          "description": "Sobel, Canny, Laplacian 에지 검출"
+        },
+        {
+          "id": "04-feature-detection",
+          "title": "특징점 검출",
+          "file": "02-classical-cv/04-feature-detection.md",
+          "description": "SIFT, SURF, ORB 특징 추출기"
+        },
+        {
+          "id": "05-morphology",
+          "title": "형태학적 연산",
+          "file": "02-classical-cv/05-morphology.md",
+          "description": "침식, 팽창, 열기, 닫기 연산"
+        }
+      ]
+    },
+    {
+      "id": "03-deep-learning-basics",
+      "title": "딥러닝 기초",
+      "description": "신경망의 핵심 원리",
+      "sections": [
+        {
+          "id": "01-neural-network",
+          "title": "신경망의 구조",
+          "file": "03-deep-learning-basics/01-neural-network.md",
+          "description": "뉴런, 레이어, 가중치의 이해"
+        },
+        {
+          "id": "02-activation-functions",
+          "title": "활성화 함수",
+          "file": "03-deep-learning-basics/02-activation-functions.md",
+          "description": "ReLU, Sigmoid, Tanh, GELU 비교"
+        },
+        {
+          "id": "03-backpropagation",
+          "title": "역전파 알고리즘",
+          "file": "03-deep-learning-basics/03-backpropagation.md",
+          "description": "경사하강법과 역전파의 수학적 이해"
+        },
+        {
+          "id": "04-loss-optimizer",
+          "title": "손실 함수와 옵티마이저",
+          "file": "03-deep-learning-basics/04-loss-optimizer.md",
+          "description": "Cross-Entropy, MSE, Adam, SGD"
+        },
+        {
+          "id": "05-pytorch-fundamentals",
+          "title": "PyTorch 기초",
+          "file": "03-deep-learning-basics/05-pytorch-fundamentals.md",
+          "description": "텐서, 자동미분, 모델 구축"
+        }
+      ]
+    },
+    {
+      "id": "04-cnn-fundamentals",
       "title": "CNN 핵심 개념",
       "description": "합성곱 신경망의 원리",
       "sections": [
         {
           "id": "01-convolution",
-          "title": "Convolution 연산",
-          "file": "02-cnn/01-convolution.md"
+          "title": "합성곱 연산",
+          "file": "04-cnn-fundamentals/01-convolution.md",
+          "description": "커널, 스트라이드, 패딩의 이해"
         },
         {
           "id": "02-pooling",
-          "title": "Pooling과 Stride",
-          "file": "02-cnn/02-pooling.md"
+          "title": "풀링 레이어",
+          "file": "04-cnn-fundamentals/02-pooling.md",
+          "description": "Max Pooling, Average Pooling, Global Pooling"
         },
         {
-          "id": "03-activation",
-          "title": "활성화 함수",
-          "file": "02-cnn/03-activation.md"
+          "id": "03-batch-normalization",
+          "title": "배치 정규화",
+          "file": "04-cnn-fundamentals/03-batch-normalization.md",
+          "description": "BatchNorm, LayerNorm, GroupNorm"
+        },
+        {
+          "id": "04-regularization",
+          "title": "정규화 기법",
+          "file": "04-cnn-fundamentals/04-regularization.md",
+          "description": "Dropout, Weight Decay, Data Augmentation"
         }
       ]
     },
     {
-      "id": "03-practice",
-      "title": "실전 기초",
-      "description": "직접 구현하며 배우기",
-      "sections": [
-        {
-          "id": "01-mnist",
-          "title": "MNIST 손글씨 분류",
-          "file": "03-practice/01-mnist.md"
-        },
-        {
-          "id": "02-cifar10",
-          "title": "CIFAR-10 이미지 분류",
-          "file": "03-practice/02-cifar10.md"
-        }
-      ]
-    },
-    {
-      "id": "04-architectures",
-      "title": "주요 아키텍처",
-      "description": "CNN의 진화 과정",
+      "id": "05-cnn-architectures",
+      "title": "CNN 아키텍처의 진화",
+      "description": "LeNet부터 EfficientNet까지",
       "sections": [
         {
           "id": "01-lenet-alexnet",
           "title": "LeNet과 AlexNet",
-          "file": "04-architectures/01-lenet-alexnet.md"
+          "file": "05-cnn-architectures/01-lenet-alexnet.md",
+          "description": "CNN의 탄생과 딥러닝 혁명의 시작"
         },
         {
-          "id": "02-vgg-resnet",
-          "title": "VGG와 ResNet",
-          "file": "04-architectures/02-vgg-resnet.md"
+          "id": "02-vgg-googlenet",
+          "title": "VGG와 GoogLeNet",
+          "file": "05-cnn-architectures/02-vgg-googlenet.md",
+          "description": "깊이의 힘과 Inception 모듈"
         },
         {
-          "id": "03-efficient-models",
-          "title": "효율적인 모델들",
-          "file": "04-architectures/03-efficient-models.md"
+          "id": "03-resnet",
+          "title": "ResNet과 Skip Connection",
+          "file": "05-cnn-architectures/03-resnet.md",
+          "description": "잔차 학습으로 깊은 네트워크 훈련"
+        },
+        {
+          "id": "04-densenet-senet",
+          "title": "DenseNet과 SENet",
+          "file": "05-cnn-architectures/04-densenet-senet.md",
+          "description": "밀집 연결과 채널 어텐션"
+        },
+        {
+          "id": "05-efficientnet",
+          "title": "EfficientNet",
+          "file": "05-cnn-architectures/05-efficientnet.md",
+          "description": "복합 스케일링으로 효율성 극대화"
+        },
+        {
+          "id": "06-convnext",
+          "title": "ConvNeXt",
+          "file": "05-cnn-architectures/06-convnext.md",
+          "description": "Transformer 시대의 순수 CNN"
         }
       ]
     },
     {
-      "id": "05-advanced",
-      "title": "고급 작업",
-      "description": "다양한 CV 태스크",
+      "id": "06-image-classification",
+      "title": "이미지 분류 실전",
+      "description": "분류 문제 해결의 A to Z",
       "sections": [
         {
-          "id": "01-object-detection",
-          "title": "객체 탐지",
-          "file": "05-advanced/01-object-detection.md"
+          "id": "01-mnist",
+          "title": "MNIST 손글씨 분류",
+          "file": "06-image-classification/01-mnist.md",
+          "description": "첫 번째 딥러닝 프로젝트"
         },
         {
-          "id": "02-segmentation",
-          "title": "이미지 분할",
-          "file": "05-advanced/02-segmentation.md"
+          "id": "02-cifar10",
+          "title": "CIFAR-10 분류",
+          "file": "06-image-classification/02-cifar10.md",
+          "description": "컬러 이미지 분류 도전"
+        },
+        {
+          "id": "03-transfer-learning",
+          "title": "전이 학습",
+          "file": "06-image-classification/03-transfer-learning.md",
+          "description": "사전 학습 모델 활용법"
+        },
+        {
+          "id": "04-fine-tuning",
+          "title": "파인 튜닝 전략",
+          "file": "06-image-classification/04-fine-tuning.md",
+          "description": "효과적인 모델 미세 조정"
+        },
+        {
+          "id": "05-data-augmentation",
+          "title": "데이터 증강",
+          "file": "06-image-classification/05-data-augmentation.md",
+          "description": "Albumentations, RandAugment, MixUp"
         }
       ]
     },
     {
-      "id": "06-vision-language",
-      "title": "Vision-Language",
-      "description": "비전과 언어의 통합",
+      "id": "07-object-detection",
+      "title": "객체 탐지",
+      "description": "이미지 내 객체 위치 찾기",
       "sections": [
         {
-          "id": "01-vit",
-          "title": "Vision Transformer",
-          "file": "06-vision-language/01-vit.md"
+          "id": "01-detection-basics",
+          "title": "객체 탐지 기초",
+          "file": "07-object-detection/01-detection-basics.md",
+          "description": "바운딩 박스, IoU, NMS 이해"
+        },
+        {
+          "id": "02-rcnn-family",
+          "title": "R-CNN 계열",
+          "file": "07-object-detection/02-rcnn-family.md",
+          "description": "R-CNN, Fast R-CNN, Faster R-CNN"
+        },
+        {
+          "id": "03-yolo",
+          "title": "YOLO 시리즈",
+          "file": "07-object-detection/03-yolo.md",
+          "description": "YOLOv5부터 YOLOv11까지"
+        },
+        {
+          "id": "04-anchor-free",
+          "title": "Anchor-Free 탐지기",
+          "file": "07-object-detection/04-anchor-free.md",
+          "description": "FCOS, CenterNet, CornerNet"
+        },
+        {
+          "id": "05-detr",
+          "title": "DETR과 Transformer 기반 탐지",
+          "file": "07-object-detection/05-detr.md",
+          "description": "End-to-End 객체 탐지"
+        }
+      ]
+    },
+    {
+      "id": "08-segmentation",
+      "title": "이미지 분할",
+      "description": "픽셀 단위 분류",
+      "sections": [
+        {
+          "id": "01-semantic-segmentation",
+          "title": "시맨틱 세그멘테이션",
+          "file": "08-segmentation/01-semantic-segmentation.md",
+          "description": "FCN, U-Net, DeepLab"
+        },
+        {
+          "id": "02-instance-segmentation",
+          "title": "인스턴스 세그멘테이션",
+          "file": "08-segmentation/02-instance-segmentation.md",
+          "description": "Mask R-CNN, YOLACT"
+        },
+        {
+          "id": "03-panoptic-segmentation",
+          "title": "파놉틱 세그멘테이션",
+          "file": "08-segmentation/03-panoptic-segmentation.md",
+          "description": "시맨틱과 인스턴스의 통합"
+        },
+        {
+          "id": "04-sam",
+          "title": "Segment Anything Model",
+          "file": "08-segmentation/04-sam.md",
+          "description": "프롬프트 기반 범용 분할 모델"
+        }
+      ]
+    },
+    {
+      "id": "09-vision-transformer",
+      "title": "Vision Transformer",
+      "description": "Transformer의 비전 적용",
+      "sections": [
+        {
+          "id": "01-attention-mechanism",
+          "title": "어텐션 메커니즘",
+          "file": "09-vision-transformer/01-attention-mechanism.md",
+          "description": "Self-Attention과 Multi-Head Attention"
+        },
+        {
+          "id": "02-transformer-basics",
+          "title": "Transformer 아키텍처",
+          "file": "09-vision-transformer/02-transformer-basics.md",
+          "description": "Encoder-Decoder 구조의 이해"
+        },
+        {
+          "id": "03-vit",
+          "title": "Vision Transformer (ViT)",
+          "file": "09-vision-transformer/03-vit.md",
+          "description": "이미지를 패치로 분할하여 처리"
+        },
+        {
+          "id": "04-swin-transformer",
+          "title": "Swin Transformer",
+          "file": "09-vision-transformer/04-swin-transformer.md",
+          "description": "계층적 윈도우 기반 어텐션"
+        },
+        {
+          "id": "05-hybrid-models",
+          "title": "하이브리드 모델들",
+          "file": "09-vision-transformer/05-hybrid-models.md",
+          "description": "CNN과 Transformer의 결합"
+        }
+      ]
+    },
+    {
+      "id": "10-vision-language",
+      "title": "Vision-Language 모델",
+      "description": "시각과 언어의 통합",
+      "sections": [
+        {
+          "id": "01-multimodal-learning",
+          "title": "멀티모달 학습 개론",
+          "file": "10-vision-language/01-multimodal-learning.md",
+          "description": "시각-언어 통합의 기초"
         },
         {
           "id": "02-clip",
           "title": "CLIP",
-          "file": "06-vision-language/02-clip.md"
+          "file": "10-vision-language/02-clip.md",
+          "description": "대조 학습으로 이미지-텍스트 연결"
+        },
+        {
+          "id": "03-blip",
+          "title": "BLIP과 BLIP-2",
+          "file": "10-vision-language/03-blip.md",
+          "description": "부트스트래핑 기반 사전학습"
+        },
+        {
+          "id": "04-llava",
+          "title": "LLaVA",
+          "file": "10-vision-language/04-llava.md",
+          "description": "시각적 지시 튜닝"
+        },
+        {
+          "id": "05-gpt4v-gemini",
+          "title": "GPT-4V와 Gemini Vision",
+          "file": "10-vision-language/05-gpt4v-gemini.md",
+          "description": "상용 멀티모달 LLM 활용"
+        }
+      ]
+    },
+    {
+      "id": "11-generative-basics",
+      "title": "생성 모델 기초",
+      "description": "VAE와 GAN의 이해",
+      "sections": [
+        {
+          "id": "01-generative-intro",
+          "title": "생성 모델 개론",
+          "file": "11-generative-basics/01-generative-intro.md",
+          "description": "판별 vs 생성 모델"
+        },
+        {
+          "id": "02-vae",
+          "title": "Variational Autoencoder",
+          "file": "11-generative-basics/02-vae.md",
+          "description": "잠재 공간과 재구성"
+        },
+        {
+          "id": "03-gan-basics",
+          "title": "GAN 기초",
+          "file": "11-generative-basics/03-gan-basics.md",
+          "description": "생성자와 판별자의 적대적 학습"
+        },
+        {
+          "id": "04-gan-variants",
+          "title": "GAN 변형들",
+          "file": "11-generative-basics/04-gan-variants.md",
+          "description": "DCGAN, StyleGAN, CycleGAN"
+        },
+        {
+          "id": "05-gan-applications",
+          "title": "GAN 응용",
+          "file": "11-generative-basics/05-gan-applications.md",
+          "description": "이미지 편집, 스타일 변환"
+        }
+      ]
+    },
+    {
+      "id": "12-diffusion-models",
+      "title": "Diffusion 모델",
+      "description": "확산 모델의 수학과 구현",
+      "sections": [
+        {
+          "id": "01-diffusion-theory",
+          "title": "Diffusion 이론",
+          "file": "12-diffusion-models/01-diffusion-theory.md",
+          "description": "전방/역방향 프로세스의 수학"
+        },
+        {
+          "id": "02-ddpm",
+          "title": "DDPM",
+          "file": "12-diffusion-models/02-ddpm.md",
+          "description": "Denoising Diffusion Probabilistic Models"
+        },
+        {
+          "id": "03-ddim",
+          "title": "DDIM과 샘플링 가속",
+          "file": "12-diffusion-models/03-ddim.md",
+          "description": "빠른 샘플링 기법들"
+        },
+        {
+          "id": "04-unet-architecture",
+          "title": "U-Net 아키텍처",
+          "file": "12-diffusion-models/04-unet-architecture.md",
+          "description": "노이즈 예측 네트워크 구조"
+        },
+        {
+          "id": "05-cfg",
+          "title": "Classifier-Free Guidance",
+          "file": "12-diffusion-models/05-cfg.md",
+          "description": "조건부 생성과 가이던스 스케일"
+        },
+        {
+          "id": "06-latent-diffusion",
+          "title": "Latent Diffusion",
+          "file": "12-diffusion-models/06-latent-diffusion.md",
+          "description": "잠재 공간에서의 확산"
+        }
+      ]
+    },
+    {
+      "id": "13-stable-diffusion",
+      "title": "Stable Diffusion 심화",
+      "description": "SD 생태계 완전 정복",
+      "sections": [
+        {
+          "id": "01-sd-architecture",
+          "title": "Stable Diffusion 아키텍처",
+          "file": "13-stable-diffusion/01-sd-architecture.md",
+          "description": "VAE, U-Net, CLIP 텍스트 인코더"
+        },
+        {
+          "id": "02-sd15-vs-sdxl",
+          "title": "SD 1.5 vs SDXL",
+          "file": "13-stable-diffusion/02-sd15-vs-sdxl.md",
+          "description": "모델 버전별 차이점"
+        },
+        {
+          "id": "03-prompting",
+          "title": "프롬프트 엔지니어링",
+          "file": "13-stable-diffusion/03-prompting.md",
+          "description": "효과적인 프롬프트 작성법"
+        },
+        {
+          "id": "04-samplers",
+          "title": "샘플러 가이드",
+          "file": "13-stable-diffusion/04-samplers.md",
+          "description": "Euler, DPM++, UniPC 비교"
+        },
+        {
+          "id": "05-flux",
+          "title": "FLUX 모델",
+          "file": "13-stable-diffusion/05-flux.md",
+          "description": "차세대 Diffusion Transformer"
+        },
+        {
+          "id": "06-sd3-future",
+          "title": "SD3와 미래 방향",
+          "file": "13-stable-diffusion/06-sd3-future.md",
+          "description": "MMDiT 아키텍처와 최신 동향"
+        }
+      ]
+    },
+    {
+      "id": "14-generative-practice",
+      "title": "생성 AI 실전",
+      "description": "커스터마이징과 제어",
+      "sections": [
+        {
+          "id": "01-lora",
+          "title": "LoRA 학습",
+          "file": "14-generative-practice/01-lora.md",
+          "description": "효율적인 모델 미세조정"
+        },
+        {
+          "id": "02-dreambooth",
+          "title": "DreamBooth",
+          "file": "14-generative-practice/02-dreambooth.md",
+          "description": "개인화된 이미지 생성"
+        },
+        {
+          "id": "03-controlnet",
+          "title": "ControlNet",
+          "file": "14-generative-practice/03-controlnet.md",
+          "description": "포즈, 에지, 깊이 기반 제어"
+        },
+        {
+          "id": "04-ip-adapter",
+          "title": "IP-Adapter",
+          "file": "14-generative-practice/04-ip-adapter.md",
+          "description": "이미지 프롬프트 활용"
+        },
+        {
+          "id": "05-comfyui",
+          "title": "ComfyUI 워크플로우",
+          "file": "14-generative-practice/05-comfyui.md",
+          "description": "노드 기반 이미지 생성"
+        },
+        {
+          "id": "06-inpainting-outpainting",
+          "title": "인페인팅과 아웃페인팅",
+          "file": "14-generative-practice/06-inpainting-outpainting.md",
+          "description": "이미지 부분 수정과 확장"
+        }
+      ]
+    },
+    {
+      "id": "15-video-generation",
+      "title": "비디오 생성",
+      "description": "동영상 생성과 편집",
+      "sections": [
+        {
+          "id": "01-video-diffusion",
+          "title": "비디오 Diffusion 기초",
+          "file": "15-video-generation/01-video-diffusion.md",
+          "description": "시간 축으로의 확장"
+        },
+        {
+          "id": "02-animatediff",
+          "title": "AnimateDiff",
+          "file": "15-video-generation/02-animatediff.md",
+          "description": "이미지 모델의 비디오 확장"
+        },
+        {
+          "id": "03-svd",
+          "title": "Stable Video Diffusion",
+          "file": "15-video-generation/03-svd.md",
+          "description": "이미지-투-비디오 생성"
+        },
+        {
+          "id": "04-sora",
+          "title": "Sora와 대규모 비디오 모델",
+          "file": "15-video-generation/04-sora.md",
+          "description": "Diffusion Transformer 기반 비디오"
+        }
+      ]
+    },
+    {
+      "id": "16-3d-vision",
+      "title": "3D 컴퓨터 비전",
+      "description": "깊이와 3차원 이해",
+      "sections": [
+        {
+          "id": "01-depth-estimation",
+          "title": "깊이 추정",
+          "file": "16-3d-vision/01-depth-estimation.md",
+          "description": "단안/스테레오 깊이 추정"
+        },
+        {
+          "id": "02-point-clouds",
+          "title": "포인트 클라우드",
+          "file": "16-3d-vision/02-point-clouds.md",
+          "description": "PointNet, PointNet++ 이해"
+        },
+        {
+          "id": "03-camera-geometry",
+          "title": "카메라 기하학",
+          "file": "16-3d-vision/03-camera-geometry.md",
+          "description": "내부/외부 파라미터, 에피폴라 기하"
+        },
+        {
+          "id": "04-slam",
+          "title": "SLAM 기초",
+          "file": "16-3d-vision/04-slam.md",
+          "description": "동시적 위치추정 및 지도작성"
+        },
+        {
+          "id": "05-3d-reconstruction",
+          "title": "3D 복원",
+          "file": "16-3d-vision/05-3d-reconstruction.md",
+          "description": "Structure from Motion, MVS"
+        }
+      ]
+    },
+    {
+      "id": "17-neural-rendering",
+      "title": "Neural Rendering",
+      "description": "NeRF와 3D Gaussian Splatting",
+      "sections": [
+        {
+          "id": "01-nerf-basics",
+          "title": "NeRF 기초",
+          "file": "17-neural-rendering/01-nerf-basics.md",
+          "description": "Neural Radiance Fields의 원리"
+        },
+        {
+          "id": "02-nerf-variants",
+          "title": "NeRF 변형들",
+          "file": "17-neural-rendering/02-nerf-variants.md",
+          "description": "Instant-NGP, Mip-NeRF, Nerfacto"
+        },
+        {
+          "id": "03-3dgs-basics",
+          "title": "3D Gaussian Splatting 기초",
+          "file": "17-neural-rendering/03-3dgs-basics.md",
+          "description": "가우시안 기반 실시간 렌더링"
+        },
+        {
+          "id": "04-3dgs-advanced",
+          "title": "3DGS 심화",
+          "file": "17-neural-rendering/04-3dgs-advanced.md",
+          "description": "동적 장면, 아바타 생성"
+        },
+        {
+          "id": "05-text-to-3d",
+          "title": "Text-to-3D",
+          "file": "17-neural-rendering/05-text-to-3d.md",
+          "description": "DreamFusion, Zero-1-to-3"
+        }
+      ]
+    },
+    {
+      "id": "18-multimodal-frontier",
+      "title": "멀티모달 AI 최전선",
+      "description": "통합 AI 모델의 현재와 미래",
+      "sections": [
+        {
+          "id": "01-unified-models",
+          "title": "통합 멀티모달 모델",
+          "file": "18-multimodal-frontier/01-unified-models.md",
+          "description": "이미지-텍스트-오디오 통합"
+        },
+        {
+          "id": "02-world-models",
+          "title": "World Models",
+          "file": "18-multimodal-frontier/02-world-models.md",
+          "description": "물리 세계 이해와 시뮬레이션"
+        },
+        {
+          "id": "03-embodied-ai",
+          "title": "Embodied AI",
+          "file": "18-multimodal-frontier/03-embodied-ai.md",
+          "description": "로봇 비전과 액션"
+        },
+        {
+          "id": "04-future-directions",
+          "title": "미래 연구 방향",
+          "file": "18-multimodal-frontier/04-future-directions.md",
+          "description": "AGI를 향한 비전 기술"
+        }
+      ]
+    },
+    {
+      "id": "19-deployment",
+      "title": "배포와 최적화",
+      "description": "실제 서비스를 위한 기술",
+      "sections": [
+        {
+          "id": "01-model-optimization",
+          "title": "모델 최적화",
+          "file": "19-deployment/01-model-optimization.md",
+          "description": "양자화, 프루닝, 지식 증류"
+        },
+        {
+          "id": "02-onnx-tensorrt",
+          "title": "ONNX와 TensorRT",
+          "file": "19-deployment/02-onnx-tensorrt.md",
+          "description": "추론 가속화"
+        },
+        {
+          "id": "03-edge-deployment",
+          "title": "엣지 배포",
+          "file": "19-deployment/03-edge-deployment.md",
+          "description": "Jetson, 라즈베리파이, 모바일"
+        },
+        {
+          "id": "04-mlops",
+          "title": "CV MLOps",
+          "file": "19-deployment/04-mlops.md",
+          "description": "학습 파이프라인과 모니터링"
+        },
+        {
+          "id": "05-serving",
+          "title": "모델 서빙",
+          "file": "19-deployment/05-serving.md",
+          "description": "Triton, TorchServe, FastAPI"
         }
       ]
     }
-  ]
+  ],
+  "resources": {
+    "papers": {
+      "description": "필수 논문 목록",
+      "file": "resources/essential-papers.md"
+    },
+    "datasets": {
+      "description": "주요 데이터셋 가이드",
+      "file": "resources/datasets.md"
+    },
+    "tools": {
+      "description": "개발 도구 및 라이브러리",
+      "file": "resources/tools.md"
+    }
+  }
 }
