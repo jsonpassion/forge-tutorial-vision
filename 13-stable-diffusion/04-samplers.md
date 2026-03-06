@@ -21,6 +21,25 @@ Stable Diffusion에서 이미지를 생성할 때 반드시 선택해야 하는 
 
 ### 개념 1: 주요 샘플러 분류
 
+> 📊 **그림 1**: 주요 샘플러 분류 체계
+
+```mermaid
+graph TD
+    A["샘플러"] --> B["ODE 계열<br/>결정론적"]
+    A --> C["SDE 계열<br/>확률적"]
+    A --> D["특수 목적"]
+    B --> B1["Euler"]
+    B --> B2["Heun"]
+    B --> B3["DPM++ 2M"]
+    B --> B4["DPM++ 2M Karras"]
+    C --> C1["Euler a"]
+    C --> C2["DPM++ SDE"]
+    C --> C3["DPM++ 2M SDE Karras"]
+    D --> D1["UniPC<br/>초고속"]
+    D --> D2["LCM<br/>4-8 스텝"]
+```
+
+
 > 💡 **비유**: 샘플러는 **등산 하산 방법**과 같습니다. 같은 산 정상(노이즈)에서 같은 계곡(이미지)으로 내려가지만, 경로가 다른 거죠. 지그재그(Euler)로 갈 수도 있고, 최적 경로(DPM-Solver)를 계산하여 직선에 가깝게 갈 수도 있습니다.
 
 | 샘플러 | 유형 | 스텝 | 특징 |
@@ -36,6 +55,25 @@ Stable Diffusion에서 이미지를 생성할 때 반드시 선택해야 하는 
 | **LCM** | 특수 | 4~8 | 초고속, 별도 학습 필요 |
 
 ### 개념 2: ODE vs SDE — 결정론적 vs 확률적
+
+> 📊 **그림 2**: ODE vs SDE 샘플러 동작 비교
+
+```mermaid
+flowchart LR
+    subgraph ODE["ODE 샘플러"]
+        direction TB
+        A1["노이즈"] --> A2["스텝 1"]
+        A2 --> A3["스텝 2"]
+        A3 --> A4["수렴된 이미지<br/>항상 동일"]
+    end
+    subgraph SDE["SDE 샘플러"]
+        direction TB
+        B1["노이즈"] --> B2["스텝 1<br/>+ 랜덤 노이즈"]
+        B2 --> B3["스텝 2<br/>+ 랜덤 노이즈"]
+        B3 --> B4["이미지<br/>매번 약간 다름"]
+    end
+```
+
 
 [DDIM](../12-diffusion-models/03-ddim.md)에서 배운 개념의 실전 적용:
 
@@ -57,6 +95,22 @@ Stable Diffusion에서 이미지를 생성할 때 반드시 선택해야 하는 
 
 ### 개념 3: Karras 노이즈 스케줄
 
+> 📊 **그림 3**: Linear vs Karras 노이즈 스케줄 스텝 배분
+
+```mermaid
+flowchart TD
+    subgraph Linear["Linear 스케줄"]
+        direction LR
+        L1["높은 노이즈<br/>균등 간격"] --> L2["중간 노이즈<br/>균등 간격"] --> L3["낮은 노이즈<br/>균등 간격"]
+    end
+    subgraph Karras["Karras 스케줄"]
+        direction LR
+        K1["높은 노이즈<br/>넓은 간격"] --> K2["중간 노이즈<br/>보통 간격"] --> K3["낮은 노이즈<br/>촘촘한 간격"]
+    end
+    Karras --> R["디테일 단계에<br/>더 많은 연산 투자"]
+```
+
+
 "Karras"가 붙은 샘플러는 Tero Karras([StyleGAN](../11-generative-basics/04-gan-variants.md)의 창시자!)가 제안한 노이즈 스케줄을 사용합니다:
 
 - **Linear 스케줄**: 스텝 간격이 균등
@@ -65,6 +119,20 @@ Stable Diffusion에서 이미지를 생성할 때 반드시 선택해야 하는 
 Karras 스케줄은 이미지의 **세밀한 디테일** 단계에 더 많은 연산을 투자하므로, 같은 스텝 수에서 더 좋은 결과를 냅니다. 대부분의 상황에서 Karras 버전을 사용하는 것이 좋아요.
 
 ### 개념 4: 실전 추천 설정
+
+> 📊 **그림 4**: 상황별 샘플러 선택 가이드
+
+```mermaid
+flowchart TD
+    Q1{"목적은?"}
+    Q1 -->|"범용 고품질"| R1["DPM++ 2M Karras<br/>20-25 스텝"]
+    Q1 -->|"속도 우선"| Q2{"모델은?"}
+    Q1 -->|"최고 품질"| R3["DPM++ 2M SDE Karras<br/>25-35 스텝"]
+    Q1 -->|"FLUX 모델"| R4["Euler<br/>20-28 스텝, CFG 3.5"]
+    Q2 -->|"일반 SD"| R2a["UniPC<br/>10-15 스텝"]
+    Q2 -->|"LCM 지원"| R2b["LCM<br/>4-8 스텝"]
+```
+
 
 **일반적인 상황 (SD 1.5 / SDXL)**:
 - 샘플러: **DPM++ 2M Karras**

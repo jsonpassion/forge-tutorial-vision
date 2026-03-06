@@ -20,6 +20,20 @@
 
 ### 1. 풀링이란? — 핵심만 남기는 요약 기술
 
+> 📊 **그림 1**: 풀링의 종류와 역할 — CNN에서의 다운샘플링 전략
+
+```mermaid
+flowchart LR
+    A["특성 맵<br/>H x W x C"] --> B{"풀링 방식"}
+    B --> C["Max Pooling<br/>최댓값 선택"]
+    B --> D["Average Pooling<br/>평균값 계산"]
+    B --> E["Global Average Pooling<br/>채널별 전체 평균"]
+    C --> F["H/2 x W/2 x C"]
+    D --> F
+    E --> G["1 x 1 x C"]
+```
+
+
 > 💡 **비유**: 100페이지짜리 보고서를 10페이지 요약본으로 만드는 것과 같습니다. 중요한 내용(최댓값)만 뽑거나, 전체 평균을 내거나, 방법은 달라도 목적은 같습니다 — **핵심은 유지하면서 크기를 줄이는 것**이죠.
 
 풀링은 합성곱과 비슷하게 윈도우를 슬라이딩하지만, **학습할 파라미터가 없습니다**. 정해진 규칙(최대, 평균 등)에 따라 값을 하나로 축약할 뿐이죠.
@@ -75,6 +89,21 @@
 실무에서는 **중간 레이어에 Max Pooling**, **마지막에 Global Average Pooling**을 쓰는 조합이 가장 흔합니다.
 
 ### 4. Global Average Pooling — FC 레이어를 대체하다
+
+> 📊 **그림 2**: 기존 FC 방식 vs GAP 방식 — 파라미터 수의 극적 차이
+
+```mermaid
+flowchart TD
+    subgraph old["기존 방식: Flatten + FC"]
+        A1["특성 맵<br/>512 x 7 x 7"] --> B1["Flatten<br/>25,088개 값"] --> C1["FC Layer<br/>파라미터 약 2500만"]
+    end
+    subgraph new["GAP 방식"]
+        A2["특성 맵<br/>512 x 7 x 7"] --> B2["GAP<br/>채널별 평균"] --> C2["512차원 벡터<br/>파라미터 0"]
+    end
+    C1 --> D["분류 출력"]
+    C2 --> D
+```
+
 
 > 💡 **비유**: 각 특성 맵(채널) 전체의 **평균 온도**를 재는 것과 같습니다. 7×7 크기의 특성 맵이 512개 있다면, 각 맵의 평균을 구해 **512개의 숫자**로 만드는 거죠.
 
@@ -159,6 +188,20 @@ print(f"분류 출력: {logits.shape}")  # [1, 10]
 ```
 
 ### 풀링 포함 간단한 CNN
+
+> 📊 **그림 3**: SimpleCNN 아키텍처 — 각 레이어별 텐서 크기 변화
+
+```mermaid
+flowchart LR
+    A["입력<br/>3 x 32 x 32"] --> B["Conv2d 3->32<br/>+ ReLU"]
+    B --> C["MaxPool2d<br/>32 x 16 x 16"]
+    C --> D["Conv2d 32->64<br/>+ ReLU"]
+    D --> E["MaxPool2d<br/>64 x 8 x 8"]
+    E --> F["Conv2d 64->128<br/>+ ReLU"]
+    F --> G["GAP<br/>128 x 1 x 1"]
+    G --> H["Linear<br/>128 -> 10"]
+```
+
 
 ```python
 import torch

@@ -32,6 +32,18 @@
 
 구체적인 동작은 4단계입니다:
 
+> 📊 **그림 1**: 배치 정규화의 4단계 처리 흐름
+
+```mermaid
+flowchart LR
+    A["입력 x"] --> B["Step 1<br/>배치 평균 계산"]
+    B --> C["Step 2<br/>배치 분산 계산"]
+    C --> D["Step 3<br/>정규화<br/>평균 0, 분산 1"]
+    D --> E["Step 4<br/>스케일 gamma<br/>시프트 beta"]
+    E --> F["출력 y"]
+```
+
+
 **Step 1: 미니배치 평균 계산**
 
 $$\mu_B = \frac{1}{m} \sum_{i=1}^{m} x_i$$
@@ -56,6 +68,20 @@ $$y_i = \gamma \hat{x}_i + \beta$$
 
 ### 3. BatchNorm의 위치 — Conv 뒤, 활성화 전
 
+> 📊 **그림 2**: CNN 표준 빌딩 블록 순서
+
+```mermaid
+flowchart LR
+    A["Conv2d<br/>bias=False"] --> B["BatchNorm2d"]
+    B --> C["ReLU"]
+    C --> D["Pooling<br/>선택적"]
+    style A fill:#4a9eff,color:#fff
+    style B fill:#ff6b6b,color:#fff
+    style C fill:#51cf66,color:#fff
+    style D fill:#ffd43b,color:#333
+```
+
+
 CNN에서 BatchNorm의 표준 위치:
 
 > **Conv2d** → **BatchNorm2d** → **ReLU** → (풀링)
@@ -63,6 +89,23 @@ CNN에서 BatchNorm의 표준 위치:
 이 순서가 사실상 표준입니다. 참고로 BatchNorm은 이미 bias 역할을 하기 때문에, 앞의 Conv2d에서 `bias=False`로 설정하는 것이 일반적입니다 ([합성곱 연산](./01-convolution.md)의 실무 팁에서 언급한 바로 그 이유입니다).
 
 ### 4. 학습 vs 추론 — 동작이 다릅니다!
+
+> 📊 **그림 3**: BatchNorm의 학습 모드와 추론 모드 동작 비교
+
+```mermaid
+flowchart TD
+    subgraph TRAIN["학습 모드 - model.train()"]
+        T1["미니배치 입력"] --> T2["배치 평균/분산 계산"]
+        T2 --> T3["정규화"]
+        T2 --> T4["이동 평균 업데이트<br/>running_mean<br/>running_var"]
+    end
+    subgraph EVAL["추론 모드 - model.eval()"]
+        E1["단일 입력"] --> E2["저장된 이동 평균/분산 사용"]
+        E2 --> E3["정규화"]
+    end
+    T4 -.->|"학습 중 누적"| E2
+```
+
 
 이건 초보자가 가장 많이 놓치는 부분인데요, BatchNorm은 **학습 모드와 추론 모드에서 다르게 동작**합니다.
 
@@ -76,6 +119,21 @@ CNN에서 BatchNorm의 표준 위치:
 > ⚠️ **흔한 오해**: "추론할 때 `model.eval()`을 빼먹어도 괜찮다" — **절대 아닙니다!** `model.eval()`을 빼먹으면 BatchNorm이 현재 입력의 통계를 사용하게 되어, 배치 크기와 구성에 따라 결과가 달라집니다. 모델 성능이 갑자기 나빠지는 가장 흔한 원인 중 하나입니다.
 
 ### 5. 다른 정규화 기법들
+
+> 📊 **그림 4**: 4D 텐서(B x C x H x W)에서 각 정규화 기법의 연산 범위
+
+```mermaid
+graph TD
+    T["4D 텐서<br/>Batch x Channel x H x W"] --> BN["BatchNorm<br/>같은 채널, 배치 전체<br/>배치 의존: O"]
+    T --> LN["LayerNorm<br/>같은 샘플, 모든 채널<br/>배치 의존: X"]
+    T --> IN["InstanceNorm<br/>같은 샘플, 각 채널<br/>배치 의존: X"]
+    T --> GN["GroupNorm<br/>같은 샘플, 채널 그룹<br/>배치 의존: X"]
+    BN --> U1["CNN<br/>배치 16 이상"]
+    LN --> U2["Transformer<br/>RNN"]
+    IN --> U3["스타일 변환"]
+    GN --> U4["CNN<br/>배치 8 이하"]
+```
+
 
 BatchNorm은 강력하지만 한계가 있습니다. 배치 크기가 작으면 통계가 불안정하고, RNN 같은 시퀀스 모델에는 적용하기 어렵죠. 이를 해결하기 위해 다양한 변형이 등장했습니다.
 

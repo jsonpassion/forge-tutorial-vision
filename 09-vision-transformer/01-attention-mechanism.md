@@ -25,6 +25,20 @@
 
 ### 개념 1: 어텐션이란? — "시험 문제의 형광펜"
 
+> 📊 **그림 1**: 어텐션의 핵심 아이디어 — 중요한 부분에 집중하기
+
+```mermaid
+flowchart LR
+    A["입력 데이터"] --> B["모든 위치 탐색"]
+    B --> C{"관련성 평가"}
+    C -->|"높음"| D["높은 가중치 부여"]
+    C -->|"낮음"| E["낮은 가중치 부여"]
+    D --> F["가중 합산"]
+    E --> F
+    F --> G["출력"]
+```
+
+
 > 💡 **비유**: 시험 공부를 할 때를 떠올려 보세요. 교과서의 모든 문장을 똑같은 비중으로 읽지 않죠? 중요한 부분에 **형광펜**을 치고, 그 부분에 집중합니다. 어텐션도 똑같습니다. 입력 데이터의 모든 부분 중에서 **지금 중요한 부분에 더 높은 가중치**를 부여하는 메커니즘이에요.
 
 어텐션(Attention)의 핵심 아이디어는 단순합니다:
@@ -58,6 +72,22 @@ $$Q = xW_Q, \quad K = xW_K, \quad V = xW_V$$
 - $W_Q, W_K, W_V$: 학습 가능한 가중치 행렬
 - $Q, K, V$: 각각 질문, 카탈로그, 실제 정보 역할
 
+> 📊 **그림 2**: Self-Attention의 Q, K, V 생성 과정
+
+```mermaid
+flowchart TD
+    X["입력 x"] --> Q["Q = x * W_Q<br/>Query: 질문"]
+    X --> K["K = x * W_K<br/>Key: 카탈로그"]
+    X --> V["V = x * W_V<br/>Value: 실제 정보"]
+    Q --> S["유사도 계산<br/>Q * K 내적"]
+    K --> S
+    S --> SM["Softmax<br/>가중치 정규화"]
+    SM --> WS["가중 합산"]
+    V --> WS
+    WS --> O["출력"]
+```
+
+
 > ⚠️ **흔한 오해**: "Q, K, V가 서로 다른 데이터에서 나온다"고 생각하기 쉬운데요, **Self-Attention**에서는 Q, K, V 모두 **같은 입력**에서 만들어집니다. "Self"라는 이름이 붙은 이유가 바로 이것이에요. 자기 자신의 다른 위치들과의 관계를 파악하는 거죠.
 
 ### 개념 3: Scaled Dot-Product Attention — "볼륨 조절이 필요한 이유"
@@ -81,6 +111,20 @@ $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)
 | 2단계 | $\div \sqrt{d_k}$ | 값이 너무 커지지 않게 스케일링 |
 | 3단계 | Softmax | 점수를 확률(가중치)로 변환 |
 | 4단계 | $\times V$ | 가중치로 Value를 합산하여 출력 |
+
+> 📊 **그림 3**: Scaled Dot-Product Attention 연산 흐름
+
+```mermaid
+flowchart LR
+    Q["Q"] --> DOT["행렬 곱<br/>Q * K^T"]
+    K["K"] --> DOT
+    DOT --> SCALE["스케일링<br/>/ sqrt(d_k)"]
+    SCALE --> SOFT["Softmax"]
+    SOFT --> MUL["행렬 곱"]
+    V["V"] --> MUL
+    MUL --> OUT["Attention 출력"]
+```
+
 
 ### 개념 4: Multi-Head Attention — "여러 개의 눈으로 동시에 보기"
 
@@ -106,6 +150,28 @@ $$\text{where} \quad \text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$$
 - $h$: 헤드 수 (보통 8 또는 12)
 - $W_i^Q, W_i^K, W_i^V$: 각 헤드별 프로젝션 가중치
 - $W^O$: 출력 프로젝션 가중치
+
+> 📊 **그림 4**: Multi-Head Attention 구조 — 여러 관점의 병렬 처리
+
+```mermaid
+flowchart TD
+    INPUT["입력"] --> SPLIT["헤드별 분할"]
+    SPLIT --> H1["Head 1<br/>색상 유사성"]
+    SPLIT --> H2["Head 2<br/>공간적 인접성"]
+    SPLIT --> H3["Head ...<br/>의미적 관련성"]
+    SPLIT --> H4["Head h"]
+    H1 --> ATT1["Attention"]
+    H2 --> ATT2["Attention"]
+    H3 --> ATT3["Attention"]
+    H4 --> ATT4["Attention"]
+    ATT1 --> CONCAT["Concatenate"]
+    ATT2 --> CONCAT
+    ATT3 --> CONCAT
+    ATT4 --> CONCAT
+    CONCAT --> WO["선형 변환 W_O"]
+    WO --> OUTPUT["출력"]
+```
+
 
 핵심은 **총 계산량이 단일 헤드와 거의 같다**는 점입니다! 차원을 $h$등분해서 각 헤드에 배분하니까요. 예를 들어 512차원을 8개 헤드로 나누면, 각 헤드는 64차원만 처리합니다.
 
@@ -278,6 +344,28 @@ plt.show()
 흥미로운 점은 8명의 저자 대부분이 이후 구글을 떠나 각자 AI 스타트업을 창업했다는 것입니다. Aidan Gomez는 Cohere를, Noam Shazeer는 Character.AI를 만들었죠.
 
 ### Self-Attention의 시간 복잡도
+
+> 📊 **그림 5**: RNN vs CNN vs Self-Attention 장거리 연결 비교
+
+```mermaid
+flowchart LR
+    subgraph RNN["RNN: 순차 전달"]
+        R1["토큰1"] --> R2["토큰2"] --> R3["토큰3"] --> R4["토큰4"]
+    end
+    subgraph CNN["CNN: 로컬 수용 영역"]
+        C1["토큰1"] --- C2["토큰2"] --- C3["토큰3"]
+        C3 --- C4["토큰4"]
+    end
+    subgraph SA["Self-Attention: 전역 연결"]
+        S1["토큰1"] <--> S2["토큰2"]
+        S1 <--> S3["토큰3"]
+        S1 <--> S4["토큰4"]
+        S2 <--> S3
+        S2 <--> S4
+        S3 <--> S4
+    end
+```
+
 
 Self-Attention의 시간 복잡도는 $O(n^2 \cdot d)$입니다. 여기서 $n$은 시퀀스 길이, $d$는 차원 수입니다. 이것은 모든 위치 쌍의 관계를 계산하기 때문인데요, 시퀀스가 길어지면 **계산량이 제곱으로 늘어나는** 것이 주요 단점입니다.
 

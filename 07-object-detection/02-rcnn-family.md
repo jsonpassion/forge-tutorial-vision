@@ -6,6 +6,21 @@
 
 딥러닝 기반 객체 탐지의 역사는 **R-CNN**에서 시작되었습니다. 2014년 Ross Girshick이 CNN을 객체 탐지에 적용하면서, Pascal VOC 벤치마크에서 mAP를 **30% 이상 끌어올리는** 혁명을 일으켰거든요. 하지만 R-CNN은 너무 느렸습니다. 이후 Fast R-CNN, Faster R-CNN으로 진화하며 속도와 정확도를 동시에 개선했는데, 이 진화 과정을 따라가면 객체 탐지의 핵심 아이디어를 자연스럽게 이해할 수 있습니다.
 
+> 📊 **그림 5**: R-CNN 계열의 진화 — 병목을 하나씩 제거하며 발전
+
+```mermaid
+flowchart LR
+    A["R-CNN<br/>2014<br/>~0.02 FPS"] -->|"CNN 공유<br/>RoI Pooling 도입"| B["Fast R-CNN<br/>2015<br/>~3 FPS"]
+    B -->|"Selective Search 제거<br/>RPN 도입"| C["Faster R-CNN<br/>2015<br/>~15 FPS"]
+    A -.- D["병목: 후보마다<br/>CNN 개별 실행"]
+    B -.- E["병목: Selective Search<br/>전통 알고리즘"]
+    C -.- F["완전한<br/>End-to-End 학습"]
+    style A fill:#ef5350,stroke:#c62828,color:#fff
+    style B fill:#ffa726,stroke:#e65100,color:#000
+    style C fill:#66bb6a,stroke:#2e7d32,color:#000
+```
+
+
 **선수 지식**: [객체 탐지 기초](./01-detection-basics.md)에서 배운 바운딩 박스, IoU, NMS
 **학습 목표**:
 - R-CNN → Fast R-CNN → Faster R-CNN의 진화 과정과 각 단계의 핵심 개선점을 이해한다
@@ -28,6 +43,20 @@ R-CNN 계열은 **Two-Stage Detector의 교과서**입니다. "먼저 후보를 
 R-CNN의 핵심 아이디어는 단순합니다: **"CNN이 이미지 분류를 잘한다면, 이미지의 각 부분에도 CNN을 적용하면 되지 않을까?"**
 
 **R-CNN 처리 과정:**
+
+> 📊 **그림 1**: R-CNN 처리 파이프라인 — 2,000개 후보 각각에 CNN을 실행
+
+```mermaid
+flowchart LR
+    A["입력 이미지"] --> B["Selective Search<br/>~2,000개 후보 추출"]
+    B --> C["각 후보를<br/>227x227 리사이즈"]
+    C --> D["AlexNet<br/>특징 추출 x2000"]
+    D --> E["SVM 분류"]
+    D --> F["박스 회귀"]
+    E --> G["최종 탐지 결과"]
+    F --> G
+```
+
 
 1. **Region Proposal (후보 영역 추출)**: Selective Search 알고리즘으로 객체가 있을 법한 **~2,000개의 후보 영역**을 추출
 2. **CNN 특징 추출**: 각 후보를 227×227로 리사이즈하고, AlexNet에 통과시켜 **4,096차원 특징 벡터** 추출
@@ -55,6 +84,23 @@ Fast R-CNN의 핵심 개선: **CNN은 전체 이미지에 한 번만 실행**하
 전체 이미지를 CNN에 통과시키면 **특징 맵(Feature Map)**이 나옵니다. 각 후보 영역의 좌표를 이 특징 맵에 매핑하면, 후보 영역에 해당하는 특징만 추출할 수 있어요. 하지만 후보마다 크기가 다르기 때문에, **RoI Pooling**으로 모든 후보를 **고정 크기(예: 7×7)**로 변환합니다.
 
 **Fast R-CNN 처리 과정:**
+
+> 📊 **그림 2**: Fast R-CNN 파이프라인 — CNN은 한 번만 실행하고 RoI Pooling으로 특징 추출
+
+```mermaid
+flowchart TD
+    A["입력 이미지"] --> B["CNN 백본<br/>한 번만 실행"]
+    A --> C["Selective Search<br/>후보 영역 추출"]
+    B --> D["특징 맵"]
+    C --> E["RoI Pooling<br/>고정 크기 7x7"]
+    D --> E
+    E --> F["FC 레이어"]
+    F --> G["분류<br/>Softmax"]
+    F --> H["박스 회귀"]
+    G --> I["최종 결과"]
+    H --> I
+```
+
 
 1. **전체 이미지** → CNN → **특징 맵** (한 번만 실행!)
 2. Selective Search로 **후보 영역 추출**
@@ -85,6 +131,25 @@ RPN은 특징 맵의 각 위치에서 **미리 정의된 기준 박스(Anchor)**
 |------|------|------|
 | **스케일** | 128², 256², 512² | 작은/중간/큰 객체 커버 |
 | **종횡비** | 1:1, 1:2, 2:1 | 정사각형, 세로형, 가로형 |
+
+> 📊 **그림 4**: 앵커 박스 개념 — 각 위치에서 9개 앵커 생성 (3 스케일 x 3 종횡비)
+
+```mermaid
+graph TD
+    A["특징 맵의 한 위치"] --> B["스케일 128x128"]
+    A --> C["스케일 256x256"]
+    A --> D["스케일 512x512"]
+    B --> B1["1:1 정사각형"]
+    B --> B2["1:2 세로형"]
+    B --> B3["2:1 가로형"]
+    C --> C1["1:1 정사각형"]
+    C --> C2["1:2 세로형"]
+    C --> C3["2:1 가로형"]
+    D --> D1["1:1 정사각형"]
+    D --> D2["1:2 세로형"]
+    D --> D3["2:1 가로형"]
+```
+
 | **위치당 앵커 수** | 3 × 3 = **9개** | 모든 조합 |
 
 특징 맵이 40×60이면, 총 40 × 60 × 9 = **21,600개의 앵커**가 생성됩니다. RPN은 각 앵커에 대해:
@@ -92,6 +157,25 @@ RPN은 특징 맵의 각 위치에서 **미리 정의된 기준 박스(Anchor)**
 - **박스 보정 값** (4개의 offset: dx, dy, dw, dh)
 
 을 예측합니다.
+
+> 📊 **그림 3**: Faster R-CNN 전체 아키텍처 — RPN이 후보 추출까지 담당
+
+```mermaid
+flowchart TD
+    A["입력 이미지"] --> B["Backbone<br/>ResNet + FPN"]
+    B --> C["공유 특징 맵"]
+    C --> D["RPN<br/>Region Proposal Network"]
+    C --> F["RoI Align"]
+    D -->|"후보 영역"| F
+    F --> G["Detection Head"]
+    G --> H["클래스 분류"]
+    G --> I["박스 회귀"]
+    H --> J["NMS + 최종 탐지"]
+    I --> J
+    style D fill:#f9a825,stroke:#f57f17,color:#000
+    style B fill:#42a5f5,stroke:#1565c0,color:#000
+```
+
 
 **Faster R-CNN 전체 구조:**
 

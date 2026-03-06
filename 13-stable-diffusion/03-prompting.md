@@ -17,9 +17,35 @@ Stable Diffusion의 이미지 품질은 프롬프트에 크게 좌우됩니다. 
 
 프롬프트는 [CLIP 텍스트 인코더](../10-vision-language/02-clip.md)를 통해 벡터로 변환되고, 이 벡터가 [크로스 어텐션](../12-diffusion-models/04-unet-architecture.md)을 통해 U-Net에 주입됩니다. 프롬프트 엔지니어링은 결국 "CLIP이 이해하기 좋은 형태로 의도를 전달하는 기술"이에요.
 
+> 📊 **그림 1**: 프롬프트가 이미지 생성에 반영되는 과정
+
+```mermaid
+flowchart LR
+    A["텍스트 프롬프트"] --> B["CLIP 텍스트 인코더"]
+    B --> C["텍스트 임베딩 벡터"]
+    C --> D["크로스 어텐션"]
+    E["노이즈 이미지"] --> F["U-Net"]
+    D --> F
+    F --> G["디노이징 반복"]
+    G --> H["최종 이미지"]
+```
+
+
 ## 핵심 개념
 
 ### 개념 1: 프롬프트의 기본 구조
+
+> 📊 **그림 2**: 효과적인 프롬프트의 5가지 구성 요소
+
+```mermaid
+graph TD
+    P["프롬프트"] --> S["1. 주제 Subject<br/>무엇을 그릴지"]
+    P --> ST["2. 스타일 Style<br/>어떤 화풍으로"]
+    P --> C["3. 구도 Composition<br/>어떤 각도에서"]
+    P --> L["4. 조명 Lighting<br/>어떤 빛으로"]
+    P --> Q["5. 품질 Quality<br/>품질 부스터"]
+```
+
 
 > 💡 **비유**: 좋은 프롬프트는 **레스토랑 주문**과 같습니다. "맛있는 거 주세요"보다 "미디엄 레어 스테이크, 머쉬룸 소스, 사이드로 구운 감자 부탁드려요"가 원하는 결과를 얻을 확률이 높죠.
 
@@ -41,6 +67,23 @@ Stable Diffusion의 이미지 품질은 프롬프트에 크게 좌우됩니다. 
 > "masterpiece", "highly detailed", "8k", "sharp focus", "professional photography"
 
 ### 개념 2: 토큰 제한과 우선순위
+
+> 📊 **그림 3**: CLIP 토큰 처리와 우선순위 — 앞쪽 토큰일수록 영향력이 큼
+
+```mermaid
+flowchart LR
+    subgraph CLIP["CLIP 77 토큰 윈도우"]
+        direction LR
+        T1["토큰 1~20<br/>영향력 높음"] --> T2["토큰 21~50<br/>영향력 중간"]
+        T2 --> T3["토큰 51~77<br/>영향력 낮음"]
+    end
+    T4["토큰 78+<br/>잘림!"] -.->|무시됨| CLIP
+    style T1 fill:#2d6a4f,color:#fff
+    style T2 fill:#52796f,color:#fff
+    style T3 fill:#84a98c,color:#000
+    style T4 fill:#d62828,color:#fff
+```
+
 
 CLIP 텍스트 인코더는 **최대 77개 토큰**만 처리합니다. 이 제한은 중요한 함의를 가져요:
 
@@ -65,6 +108,20 @@ print(f"최대 허용: 77개")
 ```
 
 ### 개념 3: 네거티브 프롬프트 — 원치 않는 것 제거
+
+> 📊 **그림 4**: CFG 기반 네거티브 프롬프트 작동 원리
+
+```mermaid
+flowchart TD
+    A["포지티브 프롬프트<br/>'a beautiful cat'"] --> B["CLIP 인코딩"]
+    C["네거티브 프롬프트<br/>'blurry, low quality'"] --> D["CLIP 인코딩"]
+    B --> E["조건부 예측"]
+    D --> F["비조건부 예측"]
+    E --> G["CFG 가이던스<br/>조건부 방향으로 유도<br/>비조건부 방향에서 이탈"]
+    F --> G
+    G --> H["고품질 고양이 이미지"]
+```
+
 
 [CFG](../12-diffusion-models/05-cfg.md)에서 배운 것처럼, 네거티브 프롬프트는 생성 방향을 **반대로** 유도합니다:
 

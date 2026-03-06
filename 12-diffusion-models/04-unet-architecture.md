@@ -37,6 +37,28 @@ U-Net은 Diffusion 모델의 **두뇌**입니다. Stable Diffusion의 추론 시
 
 ### 개념 2: Diffusion U-Net의 구조
 
+> 📊 **그림 1**: Diffusion U-Net의 전체 구조 — 인코더, 미들 블록, 디코더와 스킵 연결
+
+```mermaid
+flowchart TD
+    subgraph 인코더["인코더 (다운샘플링)"]
+        E1["ResNet + Attn<br/>64x64"] --> E2["ResNet + Attn<br/>32x32"] --> E3["ResNet + Attn<br/>16x16"]
+    end
+    subgraph 미들["미들 블록 (병목)"]
+        M["ResNet → Attn → ResNet<br/>8x8"]
+    end
+    subgraph 디코더["디코더 (업샘플링)"]
+        D3["ResNet + Attn<br/>16x16"] --> D2["ResNet + Attn<br/>32x32"] --> D1["ResNet + Attn<br/>64x64"]
+    end
+    E3 --> M --> D3
+    E1 -.->|"스킵 연결 (concat)"| D1
+    E2 -.->|"스킵 연결 (concat)"| D2
+    E3 -.->|"스킵 연결 (concat)"| D3
+    IN["노이즈 이미지 입력"] --> E1
+    D1 --> OUT["예측된 노이즈 출력"]
+```
+
+
 Diffusion U-Net은 세 부분으로 구성됩니다:
 
 **인코더 (다운샘플링)**
@@ -60,6 +82,18 @@ Diffusion U-Net은 세 부분으로 구성됩니다:
 
 이렇게 하면 같은 네트워크가 $t=999$(거의 노이즈)와 $t=1$(거의 깨끗)에서 서로 다른 행동을 할 수 있습니다.
 
+> 📊 **그림 2**: 시간 임베딩이 ResNet 블록에 주입되는 흐름
+
+```mermaid
+flowchart LR
+    T["시간 t"] --> SIN["사인/코사인<br/>인코딩"] --> MLP["MLP"] --> ADD(("더하기"))
+    X["입력 특징맵"] --> CONV1["Conv + GroupNorm<br/>+ SiLU"] --> ADD
+    ADD --> CONV2["Conv + GroupNorm<br/>+ SiLU"] --> PLUS(("잔차 합"))
+    X --> SKIP["1x1 Conv"] --> PLUS
+    PLUS --> OUT["출력 특징맵"]
+```
+
+
 ### 개념 4: 어텐션 블록 — 전역적 관계 포착
 
 [어텐션 메커니즘](../09-vision-transformer/01-attention-mechanism.md)이 U-Net에 핵심적으로 사용됩니다:
@@ -73,11 +107,46 @@ Diffusion U-Net은 세 부분으로 구성됩니다:
 - Query: 이미지 특징 → Key, Value: 텍스트 임베딩
 - "a red car" → 빨간색이 자동차 영역에 적용되도록 유도
 
+> 📊 **그림 3**: 셀프 어텐션과 크로스 어텐션의 역할 비교
+
+```mermaid
+flowchart TD
+    subgraph SA["셀프 어텐션"]
+        IMG1["이미지 특징"] --> Q1["Q"]
+        IMG1 --> K1["K"]
+        IMG1 --> V1["V"]
+        Q1 & K1 & V1 --> ATTN1["Attention"]
+        ATTN1 --> OUT1["이미지 내부<br/>장거리 일관성"]
+    end
+    subgraph CA["크로스 어텐션"]
+        IMG2["이미지 특징"] --> Q2["Q"]
+        TXT["텍스트 임베딩"] --> K2["K"]
+        TXT --> V2["V"]
+        Q2 & K2 & V2 --> ATTN2["Attention"]
+        ATTN2 --> OUT2["텍스트 조건이<br/>반영된 특징"]
+    end
+```
+
+
 [DETR](../07-object-detection/05-detr.md)과 [Mask2Former](../08-segmentation/03-panoptic-segmentation.md)에서 크로스 어텐션이 쿼리와 이미지를 연결했던 것처럼, 여기서는 텍스트와 이미지를 연결합니다.
 
 > ⚠️ **흔한 오해**: "어텐션은 모든 해상도에서 사용된다" — 아닙니다! 어텐션의 연산량은 $O(n^2)$이므로, 높은 해상도(64×64 이상)에서는 너무 비쌉니다. 보통 16×16, 32×32 같은 **낮은 해상도**에서만 어텐션을 적용합니다.
 
 ### 개념 5: DiT — Diffusion Transformer
+
+> 📊 **그림 4**: U-Net에서 DiT로의 아키텍처 전환
+
+```mermaid
+flowchart LR
+    subgraph UNET["U-Net 방식"]
+        A1["노이즈 이미지"] --> A2["인코더<br/>(CNN 다운샘플)"] --> A3["미들 블록"] --> A4["디코더<br/>(CNN 업샘플)"] --> A5["예측 노이즈"]
+    end
+    subgraph DIT["DiT 방식"]
+        B1["노이즈 이미지"] --> B2["패치 분할<br/>+ 임베딩"] --> B3["Transformer<br/>블록 x N"] --> B4["디패치파이"] --> B5["예측 노이즈"]
+    end
+    UNET -.->|"진화"| DIT
+```
+
 
 최근에는 U-Net을 **Transformer**로 대체하는 추세입니다:
 
@@ -182,6 +251,19 @@ print(f"Cross-Attn 출력: {h.shape}")     # [2, 128, 32, 32]
 U-Net은 해상도별로 설계가 고정되어 있어 모델을 키우기 어렵지만, DiT는 Transformer의 레이어 수나 hidden 차원을 늘리는 것만으로 쉽게 스케일업할 수 있죠. GPT가 모델 크기를 키울수록 좋아지듯, DiT도 같은 경향을 보입니다.
 
 ### ControlNet이 작동하는 이유
+
+> 📊 **그림 5**: ControlNet의 작동 원리 — U-Net 인코더 복제와 스킵 연결 활용
+
+```mermaid
+flowchart TD
+    CTRL["제어 입력<br/>(에지, 포즈 등)"] --> ENC_C["복제된 인코더"]
+    IMG["노이즈 이미지"] --> ENC_O["원본 인코더"]
+    ENC_O --> MID["미들 블록"] --> DEC["디코더"]
+    ENC_C -->|"zero conv로 주입"| DEC
+    ENC_O -.->|"스킵 연결"| DEC
+    DEC --> OUT["제어된 이미지 생성"]
+```
+
 
 [ControlNet](../14-generative-practice/03-controlnet.md)은 U-Net의 인코더 부분을 **복제**하여, 에지 맵이나 포즈 정보를 주입합니다. U-Net의 스킵 연결 구조 덕분에, 인코더의 출력이 디코더에 직접 전달되어 제어 신호가 효과적으로 반영되는 거죠.
 

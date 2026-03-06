@@ -31,6 +31,20 @@
 | 물리 이해 | 인간 이하 | 근사적 이해 |
 | 범용 문제 해결 | 아직 없음 | AGI 영역 |
 
+> 📊 **그림 1**: Narrow AI에서 AGI로의 발전 스펙트럼
+
+```mermaid
+graph LR
+    A["단일 태스크 AI<br/>이미지 분류, 번역"] --> B["멀티태스크 AI<br/>GPT-4, Gemini"]
+    B --> C["멀티모달 AI<br/>텍스트+이미지+오디오"]
+    C --> D["범용 AI(AGI)<br/>모든 지적 태스크"]
+    style A fill:#e8f5e9
+    style B fill:#fff3e0
+    style C fill:#e3f2fd
+    style D fill:#fce4ec
+```
+
+
 ## 핵심 개념
 
 ### 개념 1: AGI란 무엇인가?
@@ -78,6 +92,21 @@
 4. **멀티모달 지능의 핵심**
    - 인간 지능은 본질적으로 멀티모달
    - 시각은 가장 정보량이 많은 감각
+
+> 📊 **그림 2**: AGI에서 비전의 역할 — 네 가지 핵심 축
+
+```mermaid
+flowchart TD
+    V["비전(Vision)"] --> P["물리 세계 이해<br/>공간, 속성, 인과"]
+    V --> G["언어 Grounding<br/>단어의 실제 의미"]
+    V --> E["Embodiment<br/>로봇 상호작용"]
+    V --> M["멀티모달 지능<br/>감각 통합"]
+    P --> AGI["AGI"]
+    G --> AGI
+    E --> AGI
+    M --> AGI
+```
+
 
 ### 개념 3: 현재의 주요 한계
 
@@ -139,6 +168,23 @@ A: (잘못된 대답 빈번)
 - **장점**: 해석 가능성, 명시적 추론
 - **과제**: 두 패러다임 통합
 
+> 📊 **그림 4**: Neuro-Symbolic AI 처리 파이프라인
+
+```mermaid
+sequenceDiagram
+    participant I as 입력(이미지/텍스트)
+    participant N as 신경망(인식)
+    participant S as 기호 표현
+    participant R as 추론 엔진(논리)
+    participant O as 최종 결론
+    I->>N: 원시 데이터
+    N->>S: 객체, 관계 추출
+    S->>R: 구조화된 표현
+    R->>O: 논리적 추론 결과
+    Note over N,R: 해석 가능하고 명시적인 추론
+```
+
+
 **3. Self-Supervised Learning의 진화**
 
 라벨 없이 학습하는 방법의 발전:
@@ -159,6 +205,21 @@ A: (잘못된 대답 빈번)
 - **로봇 사전학습**: 시뮬레이션 + 실제 데이터
 - **Human-in-the-loop**: 사람 피드백 통합
 - **Continual Learning**: 배포 후에도 계속 학습
+
+> 📊 **그림 3**: 5대 유망 연구 방향과 상호 관계
+
+```mermaid
+flowchart TD
+    WM["World Models<br/>물리 이해, 시뮬레이션"] --> EMB["Embodied Learning<br/>로봇, 실세계 학습"]
+    SSL["Self-Supervised Learning<br/>라벨 없는 학습"] --> WM
+    SSL --> EFF["Efficient AI<br/>경량화, MoE"]
+    NS["Neuro-Symbolic AI<br/>신경망 + 논리 추론"] --> WM
+    EMB --> AGI["AGI를 향해"]
+    EFF --> EMB
+    NS --> AGI
+    WM --> AGI
+```
+
 
 ### 개념 5: 미해결 근본 문제
 
@@ -234,6 +295,24 @@ CV만 알아서는 부족:
 - 가장 불확실한 구간
 - 현재 패러다임의 한계 도달 가능성
 - 새로운 아키텍처 돌파구 필요할 수 있음
+
+> 📊 **그림 5**: 앞으로 10년의 AI 로드맵
+
+```mermaid
+flowchart LR
+    A["2025-2027<br/>멀티모달 통합"] --> B["2027-2030<br/>Embodied AI 상용화"]
+    B --> C["2030-2035<br/>AGI 가능성?"]
+    A --- A1["범용 멀티모달 모델"]
+    A --- A2["실시간 비디오 이해"]
+    B --- B1["가정용 보조 로봇"]
+    B --- B2["자율주행 L4 확산"]
+    C --- C1["새 아키텍처 필요?"]
+    C --- C2["패러다임 전환점"]
+    style A fill:#e8f5e9
+    style B fill:#fff3e0
+    style C fill:#fce4ec
+```
+
 
 ## 이 튜토리얼을 마치며
 

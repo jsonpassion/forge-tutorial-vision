@@ -17,6 +17,21 @@
 
 ## 왜 알아야 할까?
 
+> 📊 **그림 2**: PyTorch 모델의 배포 최적화 파이프라인
+
+```mermaid
+flowchart TD
+    A["PyTorch 모델<br/>학습 완료"] --> B["ONNX 변환<br/>torch.onnx.export"]
+    B --> C{"배포 환경"}
+    C -->|"범용 서버"| D["ONNX Runtime<br/>CPU/GPU"]
+    C -->|"NVIDIA GPU"| E["TensorRT<br/>FP16/INT8"]
+    C -->|"엣지 디바이스"| F["TensorRT + Jetson"]
+    D --> G["1.5-2x 속도 향상"]
+    E --> H["2-5x 속도 향상"]
+    F --> I["실시간 추론"]
+```
+
+
 > 💡 **비유**: 영화를 만들 때 **촬영(학습)**과 **상영(추론)**은 다른 장비가 필요합니다. 촬영에는 대형 카메라와 조명 장비가, 상영에는 프로젝터와 스크린이 필요하죠. PyTorch는 촬영 장비(학습), TensorRT는 상영 장비(추론)입니다. 상영관에서 촬영 장비를 쓸 필요가 없듯, 추론에는 **추론 전용 엔진**이 훨씬 효율적입니다.
 
 **PyTorch vs 추론 엔진 비교:**
@@ -40,6 +55,31 @@
 ### 개념 1: ONNX란?
 
 > 💡 **비유**: ONNX는 **세계 공통어(영어)**와 같습니다. 한국어로 쓴 소설을 일본에서 읽으려면 번역이 필요하죠. 마찬가지로 PyTorch 모델을 TensorFlow나 다른 환경에서 쓰려면 공통 형식이 필요합니다. ONNX가 바로 그 **신경망의 공통어**입니다.
+
+> 📊 **그림 1**: ONNX를 통한 프레임워크 간 모델 호환 구조
+
+```mermaid
+flowchart LR
+    subgraph 학습 프레임워크
+        A["PyTorch"] 
+        B["TensorFlow"]
+        C["PaddlePaddle"]
+    end
+    A -->|"torch.onnx.export"| D["ONNX 모델<br/>(.onnx)"]
+    B -->|"tf2onnx"| D
+    C -->|"paddle2onnx"| D
+    subgraph 추론 엔진
+        E["ONNX Runtime"]
+        F["TensorRT"]
+        G["OpenVINO"]
+        H["Core ML"]
+    end
+    D --> E
+    D --> F
+    D --> G
+    D --> H
+```
+
 
 **ONNX (Open Neural Network Exchange)**는 Facebook(Meta)과 Microsoft가 2017년에 발표한 오픈 포맷입니다. 다양한 딥러닝 프레임워크 간의 모델 호환성을 제공합니다.
 
@@ -199,6 +239,20 @@ for batch_size in [1, 4, 8, 16]:
 
 > 💡 **비유**: TensorRT는 **F1 레이싱카 튜닝**과 같습니다. 일반 자동차도 달릴 수 있지만, F1 팀은 엔진, 공기역학, 타이어 모든 부분을 **극한까지 최적화**합니다. TensorRT도 NVIDIA GPU의 모든 기능을 활용해 추론 성능을 극대화합니다.
 
+> 📊 **그림 3**: TensorRT 최적화 과정 — ONNX 모델이 엔진으로 변환되는 단계
+
+```mermaid
+flowchart TD
+    A["ONNX 모델"] --> B["그래프 파싱"]
+    B --> C["레이어 퓨전<br/>Conv+BN+ReLU 통합"]
+    C --> D["정밀도 변환<br/>FP32 to FP16/INT8"]
+    D --> E["커널 자동 튜닝<br/>GPU별 최적 커널 탐색"]
+    E --> F["메모리 최적화<br/>텐서 메모리 재사용"]
+    F --> G["TensorRT 엔진<br/>(.engine)"]
+    G --> H["GPU 추론 실행"]
+```
+
+
 **TensorRT 최적화 기법:**
 
 | 기법 | 설명 | 효과 |
@@ -351,6 +405,19 @@ class TensorRTInference:
 
 가장 실용적인 방법은 **ONNX Runtime의 TensorRT Execution Provider**를 사용하는 것입니다. ONNX Runtime의 간편한 API와 TensorRT의 성능을 동시에 얻을 수 있습니다.
 
+> 📊 **그림 4**: ONNX Runtime의 Execution Provider 폴백 체인
+
+```mermaid
+flowchart LR
+    A["ONNX 모델"] --> B["ONNX Runtime"]
+    B --> C{"TensorRT EP<br/>사용 가능?"}
+    C -->|"Yes"| D["TensorRT 추론<br/>최고 성능"]
+    C -->|"No"| E{"CUDA EP<br/>사용 가능?"}
+    E -->|"Yes"| F["CUDA 추론<br/>GPU 가속"]
+    E -->|"No"| G["CPU 추론<br/>범용 실행"]
+```
+
+
 ```python
 import onnxruntime as ort
 import numpy as np
@@ -440,6 +507,24 @@ def compare_providers(onnx_path, input_shape, iterations=100):
 > 🔥 **실무 팁**: 첫 실행 시 TensorRT 엔진 빌드에 시간이 걸립니다. `trt_engine_cache_enable=True`로 캐시를 활성화하면 두 번째 실행부터는 즉시 시작됩니다. 배포 시에는 미리 빌드한 엔진 파일을 함께 배포하는 것이 좋습니다.
 
 ### 개념 5: trtexec 커맨드라인 도구
+
+> 📊 **그림 5**: trtexec 활용 워크플로
+
+```mermaid
+sequenceDiagram
+    participant U as 개발자
+    participant T as trtexec
+    participant E as TensorRT 엔진
+    U->>T: ONNX 모델 + 옵션 전달<br/>(--fp16, --int8)
+    T->>T: 그래프 최적화
+    T->>T: 커널 자동 선택
+    T->>E: 엔진 파일 저장 (.engine)
+    U->>T: --loadEngine로 벤치마크
+    T->>E: 추론 반복 실행
+    E-->>T: 지연시간/처리량 결과
+    T-->>U: 성능 리포트 출력
+```
+
 
 코드 없이 빠르게 ONNX → TensorRT 변환과 벤치마크가 가능합니다.
 

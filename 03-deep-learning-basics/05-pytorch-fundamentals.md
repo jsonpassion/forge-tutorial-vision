@@ -82,6 +82,18 @@ print(f"텐서 장치: {x.device}")
 
 ### 2. Dataset과 DataLoader — 데이터 파이프라인
 
+> 📊 **그림 1**: Dataset과 DataLoader의 데이터 공급 흐름
+
+```mermaid
+flowchart LR
+    A["원본 데이터"] --> B["Dataset<br/>__getitem__(idx)"]
+    B --> C["DataLoader<br/>batch_size=32"]
+    C --> D["셔플 + 배치 구성"]
+    D --> E["batch_x, batch_y"]
+    E --> F["모델 입력"]
+```
+
+
 > 💡 **비유**: Dataset은 **재료 창고**이고, DataLoader는 **배달 트럭**입니다. 창고에서 재료(데이터)를 꺼내고, 트럭이 일정량(배치)씩 주방(모델)에 배달합니다.
 
 ```python
@@ -119,6 +131,19 @@ print(f"배치 shape: x={batch_x.shape}, y={batch_y.shape}")  # [32, 1]
 
 ### 3. 모델 정의 — `nn.Module`
 
+> 📊 **그림 2**: MyModel의 nn.Sequential 레이어 구조
+
+```mermaid
+flowchart TD
+    X["입력 x<br/>dim=1"] --> L1["nn.Linear(1, 32)"]
+    L1 --> R1["ReLU"]
+    R1 --> L2["nn.Linear(32, 32)"]
+    L2 --> R2["ReLU"]
+    R2 --> L3["nn.Linear(32, 1)"]
+    L3 --> Y["출력<br/>dim=1"]
+```
+
+
 ```python
 import torch
 import torch.nn as nn
@@ -150,6 +175,19 @@ print(f"총 파라미터: {total:,}, 학습 가능: {trainable:,}")
 ### 4. 완전한 학습 루프
 
 이것이 PyTorch의 **핵심 패턴**입니다. 이후 CNN, Transformer, 어떤 모델이든 이 구조를 따릅니다.
+
+> 📊 **그림 3**: PyTorch 학습 루프의 핵심 흐름 (매 배치 반복)
+
+```mermaid
+flowchart TD
+    A["배치 데이터 로드"] --> B["순전파<br/>prediction = model(x)"]
+    B --> C["손실 계산<br/>loss = criterion(pred, y)"]
+    C --> D["optimizer.zero_grad()<br/>기울기 초기화"]
+    D --> E["loss.backward()<br/>역전파"]
+    E --> F["optimizer.step()<br/>가중치 업데이트"]
+    F -->|"다음 배치"| A
+```
+
 
 ```python
 import torch
@@ -207,6 +245,27 @@ with torch.no_grad():  # 기울기 계산 비활성화 (메모리 절약)
 ```
 
 ### 5. 학습 vs 평가 모드
+
+> 📊 **그림 4**: 학습 모드와 평가 모드의 전환 흐름
+
+```mermaid
+stateDiagram-v2
+    [*] --> 학습모드: model.train()
+    학습모드 --> 학습모드: 에포크 반복
+    학습모드 --> 평가모드: model.eval()
+    평가모드 --> 추론: torch.no_grad()
+    추론 --> 결과출력
+    평가모드 --> 학습모드: model.train()
+    state 학습모드 {
+        Dropout활성화
+        BatchNorm학습통계
+    }
+    state 평가모드 {
+        Dropout비활성화
+        BatchNorm고정통계
+    }
+```
+
 
 | 구분 | 코드 | 효과 |
 |------|------|------|

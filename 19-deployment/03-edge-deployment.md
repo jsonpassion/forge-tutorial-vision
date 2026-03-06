@@ -17,6 +17,21 @@
 
 ## 왜 알아야 할까?
 
+> 📊 **그림 1**: 클라우드 AI vs 엣지 AI 아키텍처 비교
+
+```mermaid
+flowchart LR
+    subgraph Cloud["클라우드 AI"]
+        U1["사용자 디바이스"] -->|네트워크| S1["클라우드 서버"]
+        S1 -->|50-500ms| U1
+    end
+    subgraph Edge["엣지 AI"]
+        U2["엣지 디바이스"] --> M2["로컬 모델"]
+        M2 -->|5-50ms| U2
+    end
+```
+
+
 > 💡 **비유**: 클라우드 AI는 **중앙 발전소**와 같고, 엣지 AI는 **태양광 패널**과 같습니다. 발전소는 대규모 전력을 생산하지만 송전선이 필요합니다. 태양광 패널은 작지만 현장에서 바로 전기를 만들죠. 자율주행차가 "잠깐, 서버에 물어볼게요"라고 할 수는 없겠죠?
 
 **클라우드 vs 엣지 비교:**
@@ -39,6 +54,23 @@
 ## 핵심 개념
 
 ### 개념 1: 엣지 디바이스 스펙트럼
+
+> 📊 **그림 2**: 엣지 디바이스 성능-전력 스펙트럼
+
+```mermaid
+graph TD
+    A["엣지 디바이스 스펙트럼"] --> H["헤비급<br/>Jetson AGX Orin<br/>275 TOPS / 60W"]
+    A --> M["미들급<br/>Jetson Orin NX<br/>100 TOPS / 25W"]
+    A --> L["라이트급<br/>Jetson Orin Nano<br/>67 TOPS / 25W"]
+    A --> F["플라이급<br/>RPi 5 + Hailo<br/>13 TOPS / 12W"]
+    A --> U["초경량<br/>Google Coral<br/>4 TOPS / 2W"]
+    H --> H1["자율주행, 휴머노이드"]
+    M --> M1["중형 로봇, AMR"]
+    L --> L1["드론, 스마트 카메라"]
+    F --> F1["교육, 프로토타입"]
+    U --> U1["초저전력 IoT"]
+```
+
 
 > 💡 **비유**: 엣지 디바이스는 **운동선수의 체급**과 같습니다. 헤비급(Jetson AGX), 미들급(Jetson Orin Nano), 라이트급(라즈베리파이), 플라이급(마이크로컨트롤러)이 있고, 각각 다른 경기에 적합합니다.
 
@@ -266,6 +298,22 @@ def coral_inference(model_path, image_path):
 
 ### 개념 4: 모바일 배포 (iOS/Android)
 
+> 📊 **그림 3**: PyTorch 모델의 엣지 변환 경로
+
+```mermaid
+flowchart TD
+    PT["PyTorch 모델"] --> ONNX["ONNX 변환"]
+    PT --> TS["TorchScript"]
+    ONNX --> TRT["TensorRT Engine<br/>Jetson 배포"]
+    ONNX --> TF["TensorFlow SavedModel"]
+    TF --> TFL["TFLite<br/>Android / RPi 배포"]
+    TS --> CML["CoreML<br/>iOS 배포"]
+    PT --> PTM["PyTorch Mobile<br/>iOS / Android"]
+    TFL --> Q1["INT8 양자화"]
+    TRT --> Q2["FP16 / INT8"]
+```
+
+
 스마트폰은 가장 널리 보급된 엣지 디바이스입니다. **Neural Engine(iOS)**, **NPU(Android)**가 탑재되어 있습니다.
 
 **모바일 배포 옵션:**
@@ -387,6 +435,24 @@ class ImageClassifier(context: Context) {
 > 🔥 **실무 팁**: 모바일 배포 시 **모델 크기**가 중요합니다. 앱 스토어는 100MB 이상 앱은 Wi-Fi에서만 다운로드를 허용합니다. MobileNet(14MB), EfficientNet-Lite(20MB) 같은 경량 모델을 선택하거나, 모델을 앱 번들이 아닌 서버에서 다운로드하는 방식을 고려하세요.
 
 ### 개념 5: 엣지 배포 최적화 전략
+
+> 📊 **그림 4**: 엣지 배포 최적화 파이프라인
+
+```mermaid
+flowchart LR
+    A["원본 모델"] --> B["프루닝<br/>불필요 가중치 제거"]
+    B --> C["양자화<br/>FP32 -> INT8"]
+    C --> D{"타깃 디바이스"}
+    D -->|Jetson| E["TensorRT 변환"]
+    D -->|RPi| F["TFLite 변환"]
+    D -->|iOS| G["CoreML 변환"]
+    D -->|Android| H["TFLite 변환"]
+    E --> I["벤치마크<br/>FPS / 정확도 측정"]
+    F --> I
+    G --> I
+    H --> I
+```
+
 
 ```python
 # 엣지 최적화 체크리스트

@@ -28,6 +28,19 @@
 
 ### 1. Thing vs Stuff — 세상을 나누는 두 가지 방법
 
+> 📊 **그림 1**: 파놉틱 세그멘테이션의 출력 구조 — Thing과 Stuff를 동시에 처리
+
+```mermaid
+flowchart LR
+    A["입력 이미지"] --> B["파놉틱 모델"]
+    B --> C{"Thing?"}
+    C -->|Yes| D["클래스 + 인스턴스 ID<br/>자동차 #1, 자동차 #2"]
+    C -->|No| E["클래스만<br/>도로, 하늘, 풀밭"]
+    D --> F["파놉틱 맵<br/>모든 픽셀에 (class, id) 부여"]
+    E --> F
+```
+
+
 > 💡 **비유**: 방 안을 설명한다고 생각해보세요. "의자 2개, 컵 3개, 고양이 1마리"는 **셀 수 있는 물건(Thing)**입니다. 반면 "바닥은 나무, 벽은 흰색, 천장은 회색"은 **셀 수 없는 재료(Stuff)**입니다. 파놉틱 세그멘테이션은 이 **둘 다** 처리합니다.
 
 컴퓨터 비전에서는 시각적 요소를 두 가지로 구분합니다:
@@ -61,6 +74,22 @@ $$\text{PQ} = \underbrace{\frac{\sum_{(p,g) \in TP} \text{IoU}(p,g)}{|TP|}}_{\te
 
 ### 3. 초기 접근법 — Panoptic FPN
 
+> 📊 **그림 2**: Panoptic FPN의 두 브랜치 구조
+
+```mermaid
+flowchart TD
+    A["입력 이미지"] --> B["공유 백본<br/>ResNet"]
+    B --> C["FPN<br/>다중 스케일 특징"]
+    C --> D["인스턴스 브랜치<br/>Mask R-CNN 스타일"]
+    C --> E["시맨틱 브랜치<br/>FPN 특징 합산"]
+    D --> F["Thing 마스크<br/>자동차 #1, 사람 #2"]
+    E --> G["Stuff 맵<br/>도로, 하늘"]
+    F --> H["규칙 기반 병합"]
+    G --> H
+    H --> I["파놉틱 결과"]
+```
+
+
 초기의 파놉틱 세그멘테이션은 기존 모델을 결합하는 방식이었습니다. **Panoptic FPN(2019)**은 이 접근법의 대표적인 예입니다.
 
 **Panoptic FPN의 구조**:
@@ -86,6 +115,22 @@ $$\text{PQ} = \underbrace{\frac{\sum_{(p,g) \in TP} \text{IoU}(p,g)}{|TP|}}_{\te
 - Mask2Former: N개의 (마스크, 클래스) 쌍을 예측 → 마스크 분류
 
 이 관점의 전환 덕분에 시맨틱, 인스턴스, 파놉틱 세그멘테이션을 **동일한 아키텍처**로 처리할 수 있게 되었습니다.
+
+> 📊 **그림 3**: Mask2Former 아키텍처 — 쿼리 기반 마스크 분류
+
+```mermaid
+flowchart LR
+    A["입력 이미지"] --> B["백본<br/>Swin Transformer"]
+    B --> C["픽셀 디코더<br/>다중 스케일 특징"]
+    C --> D["Transformer 디코더<br/>Masked Attention"]
+    Q["학습 가능한 쿼리<br/>N개"] --> D
+    D --> E["마스크 예측<br/>N개의 마스크"]
+    D --> F["클래스 예측<br/>N개의 클래스"]
+    E --> G["헝가리안 매칭<br/>+ 후처리"]
+    F --> G
+    G --> H["시맨틱 / 인스턴스<br/>/ 파놉틱 결과"]
+```
+
 
 **Mask2Former의 핵심 구조**:
 
@@ -154,6 +199,23 @@ Mask2Former의 학습에도 [DETR에서 배운 헝가리안 매칭](../07-object
 
 ### 5. OneFormer — 하나의 모델, 하나의 학습으로 모든 것을
 
+> 📊 **그림 4**: OneFormer의 태스크 조건부 학습 — 텍스트 프롬프트로 태스크 전환
+
+```mermaid
+flowchart TD
+    T1["'the task is panoptic'"] --> TE["텍스트 인코더"]
+    T2["'the task is semantic'"] -.-> TE
+    T3["'the task is instance'"] -.-> TE
+    TE --> Q["태스크 조건부 쿼리"]
+    IMG["입력 이미지"] --> B["공유 백본"]
+    B --> D["Transformer 디코더"]
+    Q --> D
+    D --> R1["파놉틱 결과"]
+    D -.-> R2["시맨틱 결과"]
+    D -.-> R3["인스턴스 결과"]
+```
+
+
 Mask2Former가 같은 아키텍처를 사용하더라도, 각 태스크별로 **따로 학습**해야 했습니다. 2023년 CVPR에서 발표된 **OneFormer**는 이 마지막 장벽마저 허물었습니다.
 
 **OneFormer의 핵심 아이디어**:
@@ -214,6 +276,21 @@ for seg in result['segments_info'][:5]:
 ## 더 깊이 알아보기
 
 ### 세그멘테이션 태스크의 통합 역사
+
+> 📊 **그림 5**: 세그멘테이션 태스크의 통합 흐름 — 분리에서 범용화까지
+
+```mermaid
+flowchart LR
+    A["2015<br/>FCN<br/>시맨틱 전용"] --> B["2017<br/>Mask R-CNN<br/>인스턴스 확립"]
+    B --> C["2019<br/>Panoptic FPN<br/>두 브랜치 결합"]
+    C --> D["2021<br/>MaskFormer<br/>마스크 분류 패러다임"]
+    D --> E["2022<br/>Mask2Former<br/>하나의 아키텍처"]
+    E --> F["2023<br/>OneFormer<br/>하나의 학습"]
+    F --> G["2023~<br/>SAM<br/>범용 세그멘테이션"]
+    style A fill:#f9d,stroke:#333
+    style G fill:#9df,stroke:#333
+```
+
 
 세그멘테이션 분야는 흥미로운 통합의 역사를 가지고 있습니다:
 

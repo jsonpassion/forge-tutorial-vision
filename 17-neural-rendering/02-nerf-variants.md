@@ -52,6 +52,24 @@ NVIDIA의 **Instant Neural Graphics Primitives(2022)**는 NeRF 학습 속도를 
 4. 8개 특징을 trilinear interpolation으로 보간
 5. 모든 레벨의 특징을 concatenate
 
+> 📊 **그림 1**: Instant-NGP 다중 해상도 해시 인코딩 파이프라인
+
+```mermaid
+flowchart LR
+    A["입력 위치 x"] --> B["레벨 1<br/>해상도 16"]
+    A --> C["레벨 2<br/>해상도 32"]
+    A --> D["...<br/>L개 레벨"]
+    A --> E["레벨 L<br/>해상도 2048"]
+    B --> F["해시 조회<br/>+ 보간"]
+    C --> F
+    D --> F
+    E --> F
+    F --> G["특징 연결<br/>concatenate"]
+    G --> H["작은 MLP<br/>64 유닛"]
+    H --> I["색상 + 밀도"]
+```
+
+
 **해시 함수:**
 
 $$h(\mathbf{x}) = \left(\bigoplus_{i=1}^{d} x_i \cdot \pi_i \right) \mod T$$
@@ -73,6 +91,25 @@ $$h(\mathbf{x}) = \left(\bigoplus_{i=1}^{d} x_i \cdot \pi_i \right) \mod T$$
 - 가까운 물체: 한 픽셀이 작은 영역 커버 → 디테일 필요
 - 먼 물체: 한 픽셀이 넓은 영역 커버 → 평균 필요
 - 원본 NeRF: 점 샘플링으로 스케일 무시 → 앨리어싱
+
+> 📊 **그림 2**: 원본 NeRF의 점 샘플링 vs Mip-NeRF의 원뿔 트레이싱 비교
+
+```mermaid
+flowchart TD
+    subgraph NeRF["원본 NeRF"]
+        A1["픽셀"] --> B1["광선 발사"]
+        B1 --> C1["점 샘플링"]
+        C1 --> D1["PE 인코딩"]
+        D1 --> E1["스케일 정보 없음<br/>앨리어싱 발생"]
+    end
+    subgraph MipNeRF["Mip-NeRF"]
+        A2["픽셀"] --> B2["원뿔 발사"]
+        B2 --> C2["3D 가우시안 근사"]
+        C2 --> D2["IPE 인코딩"]
+        D2 --> E2["스케일 반영<br/>앨리어싱 제거"]
+    end
+```
+
 
 **해결책: Cone Tracing**
 
@@ -115,11 +152,45 @@ $$\text{contract}(\mathbf{x}) = \begin{cases}
 
 3. **Distortion Loss**: 가중치가 한 곳에 집중되도록 정규화
 
+> 📊 **그림 3**: Mip-NeRF 360의 무한 장면 처리 구조
+
+```mermaid
+flowchart LR
+    A["무한 장면"] --> B{"거리 판단"}
+    B -->|"norm <= 1"| C["단위 구 내부<br/>그대로 유지"]
+    B -->|"norm > 1"| D["단위 구 외부<br/>반비례 압축"]
+    C --> E["유한 공간으로 변환"]
+    D --> E
+    E --> F["Proposal Network<br/>밀도 예측"]
+    F --> G["효율적 샘플링"]
+    G --> H["최종 렌더링"]
+```
+
+
 ### 개념 4: Nerfacto - 실전을 위한 통합 솔루션
 
 > 💡 **비유**: 요리에 비유하면, Instant-NGP는 빠른 전자레인지, Mip-NeRF는 고품질 오븐입니다. Nerfacto는 이 둘의 장점을 조합한 **만능 조리기구**예요.
 
 **Nerfacto**는 Nerfstudio 팀이 만든 실용적 NeRF 모델로, 여러 기법의 장점을 조합했습니다:
+
+> 📊 **그림 4**: Nerfacto의 구성 요소와 출처
+
+```mermaid
+graph TD
+    N["Nerfacto"] --> A["Hash Encoding<br/>from Instant-NGP"]
+    N --> B["Proposal Sampling<br/>from Mip-NeRF 360"]
+    N --> C["Appearance Embedding<br/>from Ref-NeRF"]
+    N --> D["Integrated PE<br/>from Mip-NeRF"]
+    A --> E["빠른 학습"]
+    B --> F["효율적 샘플링"]
+    C --> G["조명 변화 대응"]
+    D --> H["앨리어싱 감소"]
+    E --> I["균형 잡힌<br/>실전 모델"]
+    F --> I
+    G --> I
+    H --> I
+```
+
 
 **핵심 구성요소:**
 

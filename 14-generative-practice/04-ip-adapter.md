@@ -21,6 +21,22 @@ Midjourney나 DALL-E 3에서 "이미지 참조" 기능을 사용해보셨나요?
 
 ### 개념 1: IP-Adapter의 핵심 아이디어
 
+> 📊 **그림 1**: IP-Adapter의 전체 처리 흐름
+
+```mermaid
+flowchart LR
+    A["참조 이미지"] --> B["CLIP Image Encoder"]
+    B --> C["Image Projection"]
+    C --> D["Image Cross-Attention"]
+    E["텍스트 프롬프트"] --> F["CLIP Text Encoder"]
+    F --> G["Text Cross-Attention"]
+    D --> H["결합"]
+    G --> H
+    H --> I["U-Net"]
+    I --> J["생성 이미지"]
+```
+
+
 > 💡 **비유**: IP-Adapter는 **통역사**와 같습니다. 텍스트 프롬프트라는 "영어"와 이미지 프롬프트라는 "중국어"를 모두 이해해서, 두 언어의 의미를 합쳐 결과물을 만들어냅니다. 기존 SD는 텍스트만 이해했지만, IP-Adapter를 붙이면 이미지도 "읽을 수" 있게 되죠.
 
 IP-Adapter(Image Prompt Adapter)는 2023년 8월 Tencent AI Lab에서 발표한 논문 "IP-Adapter: Text Compatible Image Prompt Adapter for Text-to-Image Diffusion Models"에서 소개되었습니다.
@@ -41,6 +57,26 @@ IP-Adapter(Image Prompt Adapter)는 2023년 8월 Tencent AI Lab에서 발표한 
 | **IP-Adapter** | ✅ | **스타일/내용** | 없음 |
 
 ### 개념 2: Decoupled Cross-Attention — 분리된 어텐션
+
+> 📊 **그림 2**: 기존 SD vs IP-Adapter의 Cross-Attention 구조 비교
+
+```mermaid
+flowchart TD
+    subgraph 기존["기존 SD"]
+        direction LR
+        T1["텍스트 임베딩"] --> CA1["Cross-Attention"]
+        CA1 --> U1["U-Net"]
+    end
+    subgraph IPA["IP-Adapter 적용"]
+        direction LR
+        T2["텍스트 임베딩"] --> CA2["Text Cross-Attention<br/>K_t, V_t"]
+        I2["이미지 임베딩"] --> CA3["Image Cross-Attention<br/>K_i, V_i"]
+        CA2 --> MERGE["가중 합산"]
+        CA3 --> MERGE
+        MERGE --> U2["U-Net"]
+    end
+```
+
 
 > 💡 **비유**: 기존 SD의 Cross-Attention이 **한 귀로만 듣는** 것이라면, IP-Adapter는 **양쪽 귀로 따로 듣는** 것과 같습니다. 오른쪽 귀(텍스트)와 왼쪽 귀(이미지)가 각자 정보를 받아들이고, 뇌에서 합쳐서 이해하죠.
 
@@ -65,6 +101,28 @@ IP-Adapter의 Decoupled Cross-Attention:
 > ⚠️ **흔한 오해**: "IP-Adapter는 이미지를 복사한다" — IP-Adapter는 이미지를 **복사**하는 게 아니라 **스타일과 의미**를 추출합니다. CLIP 임베딩을 거치면서 이미지의 "본질"만 남고 세부 디테일은 사라집니다.
 
 ### 개념 3: IP-Adapter 변형들
+
+> 📊 **그림 3**: IP-Adapter 변형별 인코딩 경로
+
+```mermaid
+flowchart TD
+    IMG["참조 이미지"] --> A
+    IMG --> B
+    IMG --> C
+    subgraph A["IP-Adapter 기본"]
+        A1["CLIP ViT-H"] --> A2["글로벌 임베딩"]
+        A2 --> A3["스타일/분위기 전이"]
+    end
+    subgraph B["IP-Adapter Plus"]
+        B1["CLIP ViT-H"] --> B2["글로벌 + 패치 임베딩"]
+        B2 --> B3["정밀한 디테일 전이"]
+    end
+    subgraph C["IP-Adapter FaceID"]
+        C1["InsightFace"] --> C2["얼굴 임베딩"]
+        C2 --> C3["얼굴 일관성 유지"]
+    end
+```
+
 
 **1. IP-Adapter (기본)**
 
@@ -126,6 +184,20 @@ IP-Adapter의 큰 장점은 **텍스트 프롬프트와 함께** 작동한다는
 ```
 
 **ControlNet과의 조합**
+
+> 📊 **그림 4**: IP-Adapter + ControlNet + 텍스트 3중 조합 파이프라인
+
+```mermaid
+flowchart LR
+    S["스타일 참조 이미지"] --> IPA["IP-Adapter<br/>스타일/분위기"]
+    P["포즈 참조 이미지"] --> CN["ControlNet<br/>구조/포즈"]
+    T["텍스트 프롬프트"] --> TE["Text Encoder<br/>세부 내용"]
+    IPA --> UNET["U-Net"]
+    CN --> UNET
+    TE --> UNET
+    UNET --> OUT["최종 이미지<br/>스타일+포즈+내용"]
+```
+
 
 IP-Adapter + ControlNet은 매우 강력한 조합입니다:
 

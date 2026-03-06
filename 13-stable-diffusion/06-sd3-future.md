@@ -21,6 +21,23 @@ SD3와 FLUX는 **같은 뿌리(MM-DiT)**에서 출발했지만 서로 다른 설
 
 ### 개념 1: SD3의 MM-DiT — 순수 이중 스트림 설계
 
+> 📊 **그림 1**: SD3 vs FLUX 블록 구조 비교 — SD3는 전부 이중 스트림, FLUX는 이중+단일 하이브리드
+
+```mermaid
+flowchart LR
+    subgraph SD3["SD3 아키텍처"]
+        direction TB
+        S1["이중 스트림 블록<br/>x24개"]
+        S1 --> SO["출력"]
+    end
+    subgraph FLUX["FLUX.1 아키텍처"]
+        direction TB
+        F1["이중 스트림 블록<br/>x19개"] --> F2["단일 스트림 블록<br/>x38개"]
+        F2 --> FO["출력"]
+    end
+```
+
+
 > 💡 **비유**: SD3와 FLUX의 차이는 **오케스트라 편성**의 차이와 같습니다. SD3는 현악과 관악을 **끝까지 따로 유지하며** 협연하는 방식이고, FLUX는 처음에는 따로 연주하다가 **후반부에 합주**로 전환하는 방식이에요. 둘 다 아름다운 음악을 만들지만, 접근법이 다른 거죠.
 
 SD3는 2024년 2월 Stability AI가 발표한 논문 "Scaling Rectified Flow Transformers for High-Resolution Image Synthesis"에서 소개되었습니다. [FLUX](./05-flux.md)와 마찬가지로 MM-DiT를 사용하지만, 블록 구성에서 핵심적인 차이가 있습니다.
@@ -40,6 +57,26 @@ SD3는 2024년 2월 Stability AI가 발표한 논문 "Scaling Rectified Flow Tra
 **핵심 차이**: SD3는 **모든 블록이 이중 스트림**입니다. 텍스트와 이미지가 처음부터 끝까지 독립적인 가중치를 유지하면서 어텐션에서만 정보를 교환하죠. 반면 FLUX는 19개 이중 스트림 후 38개 단일 스트림으로 전환하여 **효율성**을 높였습니다.
 
 SD3가 텍스트 인코더를 **3개** 사용한다는 점도 주목할 만합니다. CLIP ViT-L, OpenCLIP ViT-G, 그리고 T5-XXL까지 — 텍스트 이해에 최대한 투자한 설계입니다.
+
+> 📊 **그림 2**: SD3의 MM-DiT 데이터 흐름 — 3개 텍스트 인코더와 이중 스트림 어텐션
+
+```mermaid
+flowchart TD
+    A["텍스트 프롬프트"] --> B1["CLIP ViT-L"]
+    A --> B2["OpenCLIP ViT-G"]
+    A --> B3["T5-XXL"]
+    B1 --> C["텍스트 임베딩 결합"]
+    B2 --> C
+    B3 --> C
+    D["노이즈 잠재 벡터"] --> E["이미지 스트림"]
+    C --> F["텍스트 스트림"]
+    E --> G["MM-DiT 블록 x24<br/>Joint Attention"]
+    F --> G
+    G --> H["디노이즈된 잠재 벡터"]
+    H --> I["VAE 디코더"]
+    I --> J["최종 이미지"]
+```
+
 
 > ⚠️ **흔한 오해**: "SD3는 FLUX보다 열등하다" — 파라미터 수가 적다고 나쁜 것은 아닙니다. SD3.5 Medium(25억)은 소비자 하드웨어에서 실행 가능하면서도 높은 품질을 제공합니다. 용도에 따라 올바른 모델이 다른 거죠.
 
@@ -80,6 +117,23 @@ SD3.5의 핵심 개선 사항:
 FLUX가 대부분의 품질 지표에서 앞서지만, SD3.5는 **접근성과 라이선스** 면에서 장점이 있습니다. 특히 SD3.5 Medium은 소비자 GPU에서도 실행 가능하다는 큰 강점이 있죠.
 
 ### 개념 4: DiT의 확장 — 이미지를 넘어 비디오로
+
+> 📊 **그림 3**: DiT 아키텍처의 멀티모달 확장 — 이미지에서 비디오, 3D, 통합 생성으로
+
+```mermaid
+graph TD
+    A["DiT<br/>Diffusion Transformer"] --> B["이미지 생성"]
+    A --> C["비디오 생성"]
+    A --> D["멀티모달 통합"]
+    B --> B1["SD3 / FLUX"]
+    B --> B2["FLUX.2 Klein<br/>효율화"]
+    C --> C1["Sora"]
+    C --> C2["Veo 3"]
+    C --> C3["Kling / Runway"]
+    D --> D1["텍스트+이미지+오디오"]
+    D --> D2["멀티 레퍼런스 생성"]
+```
+
 
 > 💡 **비유**: DiT(Diffusion Transformer)가 이미지 생성에서 성공한 것은 **활판 인쇄의 발명**과 같습니다. 처음에는 책(이미지)만 찍었지만, 같은 원리로 신문(비디오), 포스터(3D), 광고(멀티모달)까지 확장된 것처럼, DiT라는 핵심 아키텍처가 다양한 생성 과제로 확장되고 있습니다.
 
@@ -205,6 +259,20 @@ print("비교 이미지 저장 완료! 왼쪽: SD3.5, 오른쪽: FLUX")
 ## 더 깊이 알아보기
 
 ### U-Net에서 DiT로 — 패러다임 전환의 의미
+
+> 📊 **그림 4**: 이미지 생성 디노이저의 세대별 진화
+
+```mermaid
+flowchart LR
+    A["1세대<br/>U-Net<br/>SD 1.x, 2.x"] --> B["2세대<br/>확대된 U-Net<br/>SDXL"]
+    B --> C["3세대<br/>MM-DiT<br/>SD3, FLUX.1"]
+    C --> D["4세대<br/>확대된 DiT<br/>FLUX.2, Sora"]
+    style A fill:#e0e0e0,stroke:#999
+    style B fill:#bbdefb,stroke:#1976d2
+    style C fill:#c8e6c9,stroke:#388e3c
+    style D fill:#fff9c4,stroke:#f9a825
+```
+
 
 [SD 아키텍처](./01-sd-architecture.md)에서 배운 U-Net은 2015년부터 이미지 생성의 핵심 백본이었습니다. 하지만 2023년 DiT(Diffusion Transformer) 논문 이후, 이미지 생성의 패러다임이 바뀌기 시작했죠.
 

@@ -14,6 +14,21 @@
 
 ## 왜 알아야 할까?
 
+> 📊 **그림 1**: 학습 루프에서 손실 함수와 옵티마이저의 역할
+
+```mermaid
+flowchart LR
+    A["입력 데이터"] --> B["모델 예측"]
+    B --> C["손실 함수<br/>예측 vs 정답 비교"]
+    C --> D["손실값 계산"]
+    D --> E["역전파<br/>기울기 계산"]
+    E --> F["옵티마이저<br/>가중치 업데이트"]
+    F --> B
+    style C fill:#f9a825,color:#000
+    style F fill:#42a5f5,color:#000
+```
+
+
 잘못된 손실 함수를 쓰면 모델이 엉뚱한 것을 최적화합니다. 부적절한 옵티마이저는 학습이 느리거나 불안정해집니다. **Cross-Entropy + Adam**은 현대 딥러닝의 표준 조합이지만, 상황에 따라 다른 선택이 필요할 때를 아는 것이 중요합니다.
 
 ## 핵심 개념
@@ -101,6 +116,24 @@ print(f"BCE 손실: {loss.item():.4f}")
 
 ### 5. 손실 함수 선택 가이드
 
+> 📊 **그림 2**: 문제 유형별 손실 함수 선택 흐름
+
+```mermaid
+flowchart TD
+    Q{"출력이 연속값인가?"}
+    Q -->|Yes| R{"이상치에 민감해도<br/>되는가?"}
+    R -->|Yes| MSE["MSE<br/>nn.MSELoss"]
+    R -->|No| HUBER["Huber / MAE<br/>nn.SmoothL1Loss"]
+    Q -->|No| C{"클래스가<br/>몇 개인가?"}
+    C -->|2개| BCE["Binary CE<br/>nn.BCEWithLogitsLoss"]
+    C -->|3개 이상| CE["Cross-Entropy<br/>nn.CrossEntropyLoss"]
+    style MSE fill:#a5d6a7,color:#000
+    style HUBER fill:#a5d6a7,color:#000
+    style BCE fill:#90caf9,color:#000
+    style CE fill:#90caf9,color:#000
+```
+
+
 | 문제 유형 | 손실 함수 | PyTorch 클래스 |
 |----------|----------|---------------|
 | 회귀 (연속 값) | MSE | `nn.MSELoss()` |
@@ -112,6 +145,21 @@ print(f"BCE 손실: {loss.item():.4f}")
 ---
 
 ### 6. 옵티마이저 — 어떻게 업데이트할 것인가
+
+> 📊 **그림 3**: 옵티마이저 발전 계보
+
+```mermaid
+graph LR
+    SGD["SGD<br/>기본 경사하강"] --> SGDM["SGD + Momentum<br/>관성 추가"]
+    SGD --> ADAGRAD["Adagrad<br/>파라미터별 학습률"]
+    ADAGRAD --> RMSPROP["RMSProp<br/>학습률 감쇠 개선"]
+    SGDM --> ADAM["Adam<br/>Momentum + RMSProp"]
+    RMSPROP --> ADAM
+    ADAM --> ADAMW["AdamW<br/>가중치 감쇠 수정"]
+    style ADAM fill:#f9a825,color:#000
+    style ADAMW fill:#ef5350,color:#fff
+```
+
 
 > 💡 **비유**: 경사하강법이 "내려가는 방향으로 걸어라"라면, 옵티마이저는 **걷는 전략**입니다. SGD는 우직하게 한 방향, Adam은 지형을 기억하며 영리하게 걷습니다.
 
@@ -145,6 +193,23 @@ optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 ```
 
 ### 9. 옵티마이저 비교
+
+> 📊 **그림 4**: SGD vs Adam의 학습 경로 차이 (개념도)
+
+```mermaid
+flowchart TD
+    subgraph SGD_PATH ["SGD 경로"]
+        S1["시작점"] --> S2["큰 진동"]
+        S2 --> S3["느린 수렴"]
+        S3 --> S4["최적점 도달<br/>오래 걸림"]
+    end
+    subgraph ADAM_PATH ["Adam 경로"]
+        A1["시작점"] --> A2["적응적 보폭"]
+        A2 --> A3["빠른 수렴"]
+        A3 --> A4["최적점 도달<br/>빠르게 도착"]
+    end
+```
+
 
 | 옵티마이저 | 학습률 조절 | 모멘텀 | 장점 | 단점 |
 |-----------|-----------|--------|------|------|

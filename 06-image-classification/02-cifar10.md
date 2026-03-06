@@ -38,6 +38,19 @@ CIFAR-10은 **Canadian Institute For Advanced Research**에서 이름을 따온 
 
 같은 10-클래스 분류인데, 왜 CIFAR-10이 훨씬 어려울까요?
 
+> 📊 **그림 4**: MNIST vs CIFAR-10 — 난이도 차이의 3가지 원인
+
+```mermaid
+flowchart TD
+    ROOT["왜 CIFAR-10이 더 어려울까?"] --> C1["1. 컬러 복잡성<br/>1채널 -> 3채널(RGB)<br/>정보량 3배"]
+    ROOT --> C2["2. 클래스 내 다양성<br/>숫자 3은 비슷하지만<br/>고양이는 천차만별"]
+    ROOT --> C3["3. 낮은 해상도<br/>32x32에서<br/>사람도 헷갈림"]
+    C1 --> R["단순 CNN: 75%<br/>실전 기법 필요"]
+    C2 --> R
+    C3 --> R
+```
+
+
 ### 2. MNIST vs CIFAR-10 — 왜 이렇게 다를까?
 
 세 가지 핵심적인 차이가 난이도를 결정합니다:
@@ -52,6 +65,22 @@ CIFAR-10은 **Canadian Institute For Advanced Research**에서 이름을 따온 
 
 ### 3. 모델 설계 전략 — 더 깊고, 더 넓게
 
+> 📊 **그림 1**: CIFAR-10용 CNN 블록 구조 — 채널 증가, 공간 감소 패턴
+
+```mermaid
+flowchart TD
+    A["입력<br/>3 x 32 x 32"] --> B1["블록 1: Conv x2<br/>64채널, 32x32"]
+    B1 --> P1["MaxPool + Dropout<br/>64 x 16 x 16"]
+    P1 --> B2["블록 2: Conv x2<br/>128채널, 16x16"]
+    B2 --> P2["MaxPool + Dropout<br/>128 x 8 x 8"]
+    P2 --> B3["블록 3: Conv x2<br/>256채널, 8x8"]
+    B3 --> P3["MaxPool + Dropout<br/>256 x 4 x 4"]
+    P3 --> GAP["AdaptiveAvgPool<br/>256 x 1 x 1"]
+    GAP --> FC["Fully Connected<br/>256 -> 10"]
+    FC --> OUT["클래스 예측"]
+```
+
+
 MNIST에서는 2블록 CNN으로 충분했지만, CIFAR-10에서는 **더 깊은 네트워크**가 필요합니다. 컬러 이미지의 복잡한 패턴을 포착하려면 합성곱 레이어를 더 쌓아야 하거든요.
 
 설계할 때 기억할 핵심 원칙이 있습니다:
@@ -64,6 +93,23 @@ MNIST에서는 2블록 CNN으로 충분했지만, CIFAR-10에서는 **더 깊은
 > 💡 **비유**: 모델 설계는 망원경을 만드는 것과 비슷합니다. 렌즈(합성곱 레이어)를 하나만 쓰면 흐릿하게 보이지만, 여러 개를 잘 배치하면 먼 곳의 세밀한 디테일까지 잡아낼 수 있죠. CIFAR-10은 MNIST보다 더 많은 "렌즈"가 필요한 셈입니다.
 
 ### 4. 데이터 증강 — 적은 데이터로 더 많이 학습하기
+
+> 📊 **그림 2**: 데이터 증강 파이프라인 — 학습 vs 테스트
+
+```mermaid
+flowchart LR
+    subgraph TRAIN["학습 파이프라인"]
+        A1["원본 이미지"] --> B1["RandomCrop<br/>패딩 4 후 크롭"]
+        B1 --> C1["RandomHorizontalFlip<br/>50% 좌우 반전"]
+        C1 --> D1["ToTensor"]
+        D1 --> E1["Normalize<br/>평균/표준편차 정규화"]
+    end
+    subgraph TEST["테스트 파이프라인"]
+        A2["원본 이미지"] --> D2["ToTensor"]
+        D2 --> E2["Normalize<br/>평균/표준편차 정규화"]
+    end
+```
+
 
 50,000장으로 복잡한 컬러 이미지를 분류하기엔 데이터가 부족할 수 있습니다. **데이터 증강(Data Augmentation)**은 기존 이미지를 변형하여 모델이 더 다양한 경우를 학습하게 만드는 기법입니다.
 
@@ -79,6 +125,23 @@ CIFAR-10에서 효과적인 증강 기법:
 데이터 증강은 **학습 데이터에만** 적용하고, 테스트 데이터는 원본 그대로 평가합니다. 이건 시험 공부할 때 다양한 문제를 풀지만, 실제 시험에서는 정해진 문제를 정확히 풀어야 하는 것과 같습니다.
 
 ### 5. 학습률 스케줄링 — 가속과 감속의 기술
+
+> 📊 **그림 3**: 코사인 어닐링 학습률 변화 흐름
+
+```mermaid
+graph LR
+    E1["Epoch 1<br/>LR: 0.100"] --> E10["Epoch 10<br/>LR: 0.090"]
+    E10 --> E20["Epoch 20<br/>LR: 0.065"]
+    E20 --> E30["Epoch 30<br/>LR: 0.035"]
+    E30 --> E40["Epoch 40<br/>LR: 0.010"]
+    E40 --> E50["Epoch 50<br/>LR: 0.000"]
+    style E1 fill:#ff6b6b,color:#fff
+    style E20 fill:#ffa94d,color:#fff
+    style E30 fill:#ffd43b,color:#333
+    style E40 fill:#69db7c,color:#333
+    style E50 fill:#4dabf7,color:#fff
+```
+
 
 처음에는 큰 학습률로 빠르게 탐색하고, 후반에는 작은 학습률로 세밀하게 수렴하는 전략이 효과적입니다. 이를 **학습률 스케줄링(Learning Rate Scheduling)**이라고 합니다.
 

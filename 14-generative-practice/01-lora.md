@@ -27,6 +27,19 @@ LoRA의 핵심은 **행렬 분해**입니다. 원래 가중치 행렬 $W$를 직
 
 $$W' = W + \Delta W = W + BA$$
 
+> 📊 **그림 1**: LoRA의 저랭크 분해 — 원본 가중치에 작은 변화량을 더하는 구조
+
+```mermaid
+flowchart LR
+    X["입력 x"] --> W["원본 가중치 W<br/>(동결, 학습 안 함)"]
+    X --> A["행렬 A<br/>(r x 2000)"]
+    A --> B["행렬 B<br/>(1000 x r)"]
+    W --> PLUS(("합산 +"))
+    B --> PLUS
+    PLUS --> Y["출력 W'x = Wx + BAx"]
+```
+
+
 여기서:
 - $W$: 원본 모델의 가중치 행렬 (예: 1000×2000, 200만 개 파라미터)
 - $B$: 새로 학습할 행렬 (1000×r)
@@ -69,6 +82,22 @@ Alpha는 학습률과 함께 LoRA의 **강도**를 조절합니다. 일반적인
 
 ### 개념 3: 어디에 LoRA를 적용할까?
 
+> 📊 **그림 2**: Stable Diffusion U-Net 내 LoRA 적용 위치
+
+```mermaid
+flowchart TD
+    UNET["U-Net"] --> CA["Cross-Attention<br/>(Q, K, V, Out)"]
+    UNET --> SA["Self-Attention<br/>(Q, K, V, Out)"]
+    UNET --> FFN["FFN / MLP"]
+    TE["Text Encoder"] --> TE_LORA["Text Encoder LoRA"]
+    CA --> CA_LORA["LoRA 적용<br/>(필수)"]:::highlight
+    SA --> SA_LORA["LoRA 적용<br/>(권장)"]:::highlight
+    FFN --> FFN_LORA["LoRA 적용<br/>(선택)"]:::optional
+    classDef highlight fill:#4CAF50,color:#fff
+    classDef optional fill:#FF9800,color:#fff
+```
+
+
 [SD 아키텍처](../13-stable-diffusion/01-sd-architecture.md)에서 배운 것처럼, Stable Diffusion은 여러 모듈로 구성됩니다. LoRA는 보통 **U-Net의 어텐션 레이어**에 적용합니다.
 
 **적용 가능한 위치:**
@@ -85,6 +114,22 @@ Alpha는 학습률과 함께 LoRA의 **강도**를 조절합니다. 일반적인
 [FLUX](../13-stable-diffusion/05-flux.md)와 [SD3](../13-stable-diffusion/06-sd3-future.md)는 U-Net 대신 Transformer 블록을 사용합니다. LoRA의 원리는 동일하지만, 적용 위치가 **이중 스트림/단일 스트림 블록의 어텐션과 MLP**로 바뀝니다.
 
 ### 개념 4: 데이터셋 준비 — LoRA 학습의 80%
+
+> 📊 **그림 3**: LoRA 학습 전체 워크플로우
+
+```mermaid
+flowchart LR
+    A["이미지 수집<br/>10~100장"] --> B["전처리<br/>크롭, 리사이즈"]
+    B --> C["캡션 작성<br/>트리거 워드 포함"]
+    C --> D["폴더 구조 정리<br/>반복횟수_트리거_클래스"]
+    D --> E["LoRA 학습<br/>Kohya / Diffusers"]
+    E --> F["결과 확인<br/>과적합 체크"]
+    F -->|"과적합"| G["Rank 낮추기<br/>에폭 줄이기"]
+    G --> E
+    F -->|"품질 양호"| H["LoRA 파일<br/>(safetensors)"]
+    H --> I["모델에 로드<br/>강도 조절 적용"]
+```
+
 
 > 💡 **비유**: LoRA 학습은 **요리**와 비슷합니다. 아무리 좋은 조리법(학습 파라미터)이 있어도, 재료(데이터셋)가 나쁘면 맛없는 요리가 나와요. 반대로 좋은 재료만 있으면 간단한 조리법으로도 훌륭한 요리가 됩니다.
 
@@ -269,6 +314,20 @@ LoRA가 작동하는 이유는 **과잉 매개변수화(Overparameterization)** 
 이 가설은 2021년 Microsoft 연구진이 GPT-3 파인튜닝 연구에서 처음 제안했습니다. 당시 1750억 파라미터의 GPT-3를 풀 파인튜닝하는 것은 불가능에 가까웠고, LoRA는 이 문제를 우아하게 해결했습니다.
 
 ### LoRA 변형들
+
+> 📊 **그림 4**: LoRA와 주요 변형 기법의 관계
+
+```mermaid
+graph TD
+    ROOT["PEFT<br/>(Parameter-Efficient Fine-Tuning)"] --> LORA["LoRA<br/>저랭크 행렬 곱"]
+    ROOT --> OTHERS["기타 PEFT 기법"]
+    LORA --> LOHA["LoHa<br/>하다마드 곱<br/>높은 표현력"]
+    LORA --> LOKR["LoKr<br/>크로네커 곱<br/>초경량"]
+    LORA --> DORA["DoRA (2024)<br/>방향+크기 분리"]
+    LOHA --> LYCORIS["LyCORIS<br/>통합 라이브러리"]
+    LOKR --> LYCORIS
+```
+
 
 | 변형 | 특징 | 용도 |
 |------|------|------|

@@ -28,6 +28,20 @@
 
 > **큰 데이터셋으로 학습된 모델의 가중치** → **새로운(작은) 데이터셋의 출발점으로 사용**
 
+> 📊 **그림 1**: CNN 레이어별 학습 특징의 계층 구조와 범용성
+
+```mermaid
+graph LR
+    A["초기 레이어<br/>가장자리, 색상"] --> B["중간 레이어<br/>패턴, 질감"]
+    B --> C["후기 레이어<br/>부분 형태"]
+    C --> D["FC 레이어<br/>클래스 분류"]
+    style A fill:#2d6a4f,color:#fff
+    style B fill:#40916c,color:#fff
+    style C fill:#52b788,color:#fff
+    style D fill:#95d5b2,color:#000
+```
+
+
 CNN이 학습하는 특징에는 재미있는 계층 구조가 있습니다:
 
 | 레이어 위치 | 학습하는 특징 | 범용성 |
@@ -40,6 +54,25 @@ CNN이 학습하는 특징에는 재미있는 계층 구조가 있습니다:
 초기 레이어가 학습한 "가장자리 검출", "질감 인식" 같은 특징은 **어떤 이미지 문제에서든** 유용합니다. 고양이를 분류하든, 암세포를 검출하든, 위성 사진을 분석하든 — 결국 가장자리와 질감에서 시작하니까요.
 
 ### 2. 두 가지 접근법 — 특징 추출 vs 파인 튜닝
+
+> 📊 **그림 2**: 특징 추출기 vs 파인 튜닝 아키텍처 비교
+
+```mermaid
+flowchart TD
+    subgraph FE["특징 추출기 방식"]
+        direction TB
+        A1["Conv 레이어들<br/>가중치 고정"] --> B1["새 FC 레이어<br/>학습 O"]
+    end
+    subgraph FT["파인 튜닝 방식"]
+        direction TB
+        A2["Conv 레이어들<br/>학습 O"] --> B2["새 FC 레이어<br/>학습 O"]
+    end
+    style A1 fill:#6c757d,color:#fff
+    style B1 fill:#0d6efd,color:#fff
+    style A2 fill:#0d6efd,color:#fff
+    style B2 fill:#0d6efd,color:#fff
+```
+
 
 전이 학습에는 크게 두 가지 방식이 있습니다:
 
@@ -66,6 +99,20 @@ CNN이 학습하는 특징에는 재미있는 계층 구조가 있습니다:
 파인 튜닝의 구체적인 전략은 [다음 섹션](./04-fine-tuning.md)에서 자세히 다룹니다.
 
 ### 3. 데이터셋 크기와 유사성에 따른 전략 선택
+
+> 📊 **그림 3**: 데이터셋 특성에 따른 전이 학습 전략 선택 흐름
+
+```mermaid
+flowchart TD
+    A["새 데이터셋 확보"] --> B{"데이터 양은?"}
+    B -->|적음| C{"원본과 유사?"}
+    B -->|많음| D{"원본과 유사?"}
+    C -->|유사| E["특징 추출기<br/>후기 레이어 활용"]
+    C -->|다름| F["특징 추출기<br/>초기 레이어 활용"]
+    D -->|유사| G["전체 파인 튜닝"]
+    D -->|다름| H["많은 레이어<br/>파인 튜닝"]
+```
+
 
 어떤 방법을 선택할지는 **데이터셋 크기**와 **원본 데이터셋과의 유사성**으로 결정합니다:
 
@@ -151,6 +198,25 @@ test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE,
 ```
 
 ### Step 2: 특징 추출기 방식
+
+> 📊 **그림 4**: 특징 추출기 방식의 ResNet-18 구조 변환
+
+```mermaid
+flowchart LR
+    subgraph BEFORE["원본 ResNet-18"]
+        direction LR
+        P1["Conv 레이어들"] --> P2["FC<br/>512 -> 1000"]
+    end
+    subgraph AFTER["수정된 ResNet-18"]
+        direction LR
+        Q1["Conv 레이어들<br/>고정 - 99.95%"] --> Q2["새 FC<br/>512 -> 10"]
+    end
+    BEFORE -->|"가중치 고정 +<br/>FC 교체"| AFTER
+    style P2 fill:#dc3545,color:#fff
+    style Q1 fill:#6c757d,color:#fff
+    style Q2 fill:#198754,color:#fff
+```
+
 
 ```python
 def create_feature_extractor(num_classes=10):

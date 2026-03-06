@@ -33,6 +33,21 @@ NeRF는 놀라운 품질을 보여주지만, 근본적인 한계가 있었습니
 
 ### 개념 1: 3D 가우시안 표현
 
+> 📊 **그림 1**: 3D 가우시안의 구성 요소와 렌더링 관계
+
+```mermaid
+graph TD
+    G["3D 가우시안"] --> M["위치 mu<br/>3D 좌표"]
+    G --> C["공분산 Sigma<br/>모양과 방향"]
+    G --> A["불투명도 alpha<br/>0~1"]
+    G --> SH["SH 계수<br/>48개 색상 파라미터"]
+    C --> S["스케일 S<br/>x, y, z 크기"]
+    C --> R["회전 R<br/>쿼터니언 q"]
+    S & R --> COV["Sigma = R S S^T R^T"]
+    SH --> COLOR["뷰 의존적 RGB 색상"]
+```
+
+
 > 💡 **비유**: 3D 장면을 표현한다고 할 때, NeRF는 "이 위치에서 이 방향으로 보면 이 색이야"라고 대답하는 **마법의 오라클**이었습니다. 3DGS는 다릅니다. 공간에 **수백만 개의 반투명한 컬러 솜뭉치(가우시안)**를 배치해서 장면을 만듭니다. 각 솜뭉치의 위치, 크기, 방향, 색을 조절하면 원하는 장면이 완성되죠.
 
 3D Gaussian Splatting은 장면을 **수십만~수백만 개의 3D 가우시안**으로 표현합니다. 각 가우시안은 다음 속성을 가집니다:
@@ -84,6 +99,19 @@ $$c(\mathbf{d}) = \sum_{l=0}^{L} \sum_{m=-l}^{l} c_{lm} Y_l^m(\mathbf{d})$$
 
 **렌더링 파이프라인:**
 
+> 📊 **그림 2**: Splatting 기반 래스터화 파이프라인
+
+```mermaid
+flowchart LR
+    A["3D 가우시안"] --> B["카메라 변환<br/>World to Camera"]
+    B --> C["2D 투영<br/>3D to 2D 가우시안"]
+    C --> D["타일 분할<br/>16x16 타일 할당"]
+    D --> E["깊이 정렬<br/>타일 내 정렬"]
+    E --> F["알파 블렌딩<br/>앞에서 뒤로 누적"]
+    F --> G["최종 이미지"]
+```
+
+
 1. **카메라 변환**: 3D 가우시안을 카메라 좌표계로 변환
 2. **2D 투영**: 3D 가우시안을 2D 가우시안으로 투영
 3. **타일 기반 정렬**: 이미지를 16x16 타일로 나누고 관련 가우시안 할당
@@ -114,6 +142,20 @@ $$C = \sum_{i=1}^{N} c_i \alpha_i \prod_{j=1}^{i-1}(1 - \alpha_j)$$
 
 학습 중에 가우시안의 수와 분포를 동적으로 조절합니다:
 
+> 📊 **그림 3**: Adaptive Density Control 의사결정 흐름
+
+```mermaid
+flowchart TD
+    START["가우시안 평가"] --> GRAD{"그래디언트가<br/>임계값 초과?"}
+    GRAD -->|아니오| PRUNE{"불투명도가<br/>임계값 이하?"}
+    GRAD -->|예| SCALE{"스케일이<br/>큰가?"}
+    SCALE -->|예| SPLIT["Split<br/>2개로 분할"]
+    SCALE -->|아니오| CLONE["Clone<br/>복제 생성"]
+    PRUNE -->|예| REMOVE["Prune<br/>가우시안 제거"]
+    PRUNE -->|아니오| KEEP["유지"]
+```
+
+
 **Densification (밀도 증가):**
 
 1. **Split**: 큰 가우시안을 두 개로 분할
@@ -132,6 +174,24 @@ $$C = \sum_{i=1}^{N} c_i \alpha_i \prod_{j=1}^{i-1}(1 - \alpha_j)$$
 - 일정 주기로 불투명도 리셋
 
 ### 개념 5: 학습 과정
+
+> 📊 **그림 4**: 3DGS 전체 학습 과정
+
+```mermaid
+flowchart TD
+    INIT["COLMAP SfM<br/>포인트 클라우드"] --> GAUSS["초기 가우시안 생성"]
+    GAUSS --> RENDER["Splatting 렌더링"]
+    RENDER --> LOSS["손실 계산<br/>L1 + D-SSIM"]
+    LOSS --> BACK["역전파<br/>mu, s, q, alpha, SH 업데이트"]
+    BACK --> CHECK{"Densification<br/>주기?"}
+    CHECK -->|예| ADC["Adaptive Density Control<br/>Split / Clone / Prune"]
+    CHECK -->|아니오| RENDER
+    ADC --> RENDER
+    LOSS --> CONV{"수렴?"}
+    CONV -->|아니오| BACK
+    CONV -->|예| DONE["학습 완료<br/>최종 가우시안 집합"]
+```
+
 
 **초기화:**
 - COLMAP의 SfM 포인트 클라우드에서 시작
@@ -546,6 +606,25 @@ python render.py -m <path_to_trained_model>
 | **학습** | 수 시간~일 | 수십 분 |
 
 ### 왜 3DGS가 빠른가?
+
+> 📊 **그림 5**: NeRF vs 3DGS 렌더링 방식 비교
+
+```mermaid
+flowchart LR
+    subgraph NERF["NeRF: Ray Marching"]
+        direction TB
+        R1["픽셀마다 Ray 발사"] --> R2["Ray 위 N개 샘플링"]
+        R2 --> R3["각 점을 MLP에 입력"]
+        R3 --> R4["볼륨 렌더링 적분"]
+    end
+    subgraph GS["3DGS: Splatting"]
+        direction TB
+        G1["가우시안을 2D 투영"] --> G2["타일별 정렬"]
+        G2 --> G3["병렬 알파 블렌딩"]
+        G3 --> G4["래스터화 완료"]
+    end
+```
+
 
 1. **래스터화 활용**: GPU의 하드웨어 가속 래스터화 파이프라인 활용
 2. **정렬 최적화**: 타일 기반 정렬로 캐시 효율 극대화

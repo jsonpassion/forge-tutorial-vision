@@ -21,6 +21,17 @@ Stable Diffusion 커뮤니티에서 만들어진 수많은 체크포인트와 Lo
 
 ### 개념 1: Motion Module — 움직임의 비밀
 
+> 📊 **그림 1**: AnimateDiff의 핵심 아이디어 — 기존 SD에 Motion Module만 추가
+
+```mermaid
+flowchart LR
+    A["기존 SD 모델<br/>(이미지 생성)"] --> B["Motion Module<br/>(Temporal Attention)"] --> C["AnimateDiff<br/>(비디오 생성)"]
+    D["기존 LoRA"] -.-> A
+    E["기존 ControlNet"] -.-> A
+    style B fill:#f9a825,stroke:#f57f17,color:#000
+```
+
+
 > 💡 **비유**: AnimateDiff는 **인형에 줄을 달아 조종사가 움직이게 만드는 것**과 같습니다. 인형(이미지 모델) 자체는 그대로 두고, 줄과 조종 메커니즘(Motion Module)만 추가해서 살아 움직이게 만드는 거죠.
 
 **Motion Module의 핵심 아이디어:**
@@ -30,6 +41,23 @@ Stable Diffusion 커뮤니티에서 만들어진 수많은 체크포인트와 Lo
 > **기존 SD 블록**: Spatial Conv → Spatial Attention → Cross Attention
 >
 > **AnimateDiff 블록**: Spatial Conv → Spatial Attention → Cross Attention → **Temporal Attention (Motion Module)**
+
+> 📊 **그림 2**: U-Net 블록 내 Motion Module 삽입 위치
+
+```mermaid
+flowchart TD
+    subgraph SD["기존 SD U-Net 블록"]
+        S1["Spatial Conv"] --> S2["Spatial Attention"] --> S3["Cross Attention"]
+    end
+    S3 --> M1["Projection In"]
+    subgraph MM["Motion Module (추가)"]
+        M1 --> M2["Temporal Self-Attention<br/>+ Position Encoding"]
+        M2 --> M3["Projection Out<br/>(Zero Init)"]
+    end
+    M3 --> OUT["다음 블록으로"]
+    style MM fill:#e3f2fd,stroke:#1565c0
+```
+
 
 **Motion Module 구조:**
 
@@ -46,6 +74,24 @@ Stable Diffusion 커뮤니티에서 만들어진 수많은 체크포인트와 Lo
 [ControlNet](../14-generative-practice/03-controlnet.md)에서 배운 Zero Convolution을 기억하시나요? AnimateDiff도 비슷한 트릭을 씁니다. Motion Module 출력을 **0으로 초기화**해서, 학습 초기에는 원래 이미지 모델처럼 동작하다가 점점 움직임을 학습합니다.
 
 ### 개념 2: 3단계 훈련 파이프라인
+
+> 📊 **그림 3**: AnimateDiff 3단계 훈련 파이프라인
+
+```mermaid
+flowchart LR
+    subgraph S1["Stage 1"]
+        A1["비디오 데이터셋"] --> A2["Domain Adapter 훈련<br/>(도메인 갭 해소)"]
+    end
+    subgraph S2["Stage 2"]
+        B1["WebVid-10M"] --> B2["Motion Module 훈련<br/>(움직임 패턴 학습)"]
+    end
+    subgraph S3["Stage 3 (선택)"]
+        C1["특정 모션 데이터"] --> C2["MotionLoRA 훈련<br/>(줌, 팬 등)"]
+    end
+    S1 --> S2 --> S3
+    style S2 fill:#e8f5e9,stroke:#2e7d32
+```
+
 
 AnimateDiff는 세 단계로 훈련됩니다:
 
@@ -94,6 +140,22 @@ AnimateDiff는 세 단계로 훈련됩니다:
 | SD 1.5 + **SDXL Motion** | - | ❌ 불가 |
 
 ### 개념 4: AnimateDiff + ControlNet 조합
+
+> 📊 **그림 4**: AnimateDiff 생태계 조합 구조
+
+```mermaid
+graph TD
+    P["텍스트 프롬프트"] --> PIPE["AnimateDiff Pipeline"]
+    CK["SD 체크포인트<br/>(스타일 결정)"] --> PIPE
+    MM["Motion Module<br/>(기본 움직임)"] --> PIPE
+    LO["LoRA<br/>(스타일 미세조정)"] -.-> PIPE
+    ML["MotionLoRA<br/>(특정 모션)"] -.-> PIPE
+    CN["ControlNet<br/>(포즈, 깊이맵)"] -.-> PIPE
+    IP["IP-Adapter<br/>(참조 이미지)"] -.-> PIPE
+    PIPE --> OUT["비디오 출력<br/>(16~32 프레임)"]
+    style PIPE fill:#fff3e0,stroke:#e65100
+```
+
 
 AnimateDiff의 강력한 점은 **기존 SD 생태계와 완전 호환**된다는 것입니다. ControlNet, LoRA, IP-Adapter 모두 함께 사용 가능합니다.
 

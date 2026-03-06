@@ -33,6 +33,21 @@ Text-to-3D는 게임 에셋 제작, VR/AR 콘텐츠, 제품 프로토타이핑, 
 
 ### 개념 1: Score Distillation Sampling (SDS)
 
+> 📊 **그림 1**: SDS의 핵심 루프 — 3D 모델을 Diffusion 모델의 피드백으로 반복 개선
+
+```mermaid
+flowchart TD
+    A["3D 모델 theta"] --> B["랜덤 시점에서<br/>이미지 렌더링 x"]
+    B --> C["노이즈 추가<br/>x → x_t"]
+    C --> D["Diffusion 모델<br/>노이즈 예측"]
+    D --> E["SDS 그래디언트 계산<br/>예측 노이즈 - 실제 노이즈"]
+    E --> F["3D 모델<br/>파라미터 업데이트"]
+    F --> A
+    style D fill:#f9a825,color:#000
+    style E fill:#e53935,color:#fff
+```
+
+
 > 💡 **비유**: 조각가가 대리석을 조각한다고 상상해보세요. 하지만 이 조각가는 눈이 가려져 있고, 곁에 있는 **비평가(Diffusion 모델)**가 "위쪽을 더 깎아" "여기는 좀 더 세밀하게"라고 피드백을 줍니다. SDS는 이 비평가의 피드백을 수학적으로 표현한 것입니다.
 
 **DreamFusion(2022)**의 핵심 혁신인 SDS는 2D Diffusion 모델의 지식을 3D 생성에 활용합니다.
@@ -67,6 +82,31 @@ $$\nabla_\theta \mathcal{L}_{SDS} = \mathbb{E}_{t, \epsilon}\left[ w(t) \left( \
 
 ### 개념 2: DreamFusion 파이프라인
 
+> 📊 **그림 2**: DreamFusion 아키텍처 — NeRF + SDS + Diffusion Prior의 결합
+
+```mermaid
+flowchart LR
+    subgraph 입력
+        P["텍스트 프롬프트"]
+    end
+    subgraph 3D표현
+        N["NeRF<br/>MLP 기반"]
+    end
+    subgraph 렌더링
+        C["랜덤 카메라<br/>시점 샘플링"] --> R["볼륨 렌더링"]
+    end
+    subgraph 2D Prior
+        SD["Stable Diffusion<br/>Frozen"]
+    end
+    N --> R
+    R --> IMG["렌더링 이미지"]
+    IMG --> SD
+    P --> SD
+    SD --> SDS["SDS Loss"]
+    SDS -->|"역전파"| N
+```
+
+
 > 💡 **비유**: DreamFusion은 **360도 회전하는 조각 심사**와 같습니다. 무작위 각도에서 사진을 찍고, 각 사진이 프롬프트에 맞는지 평가받아 조각을 수정합니다. 모든 각도에서 좋은 평가를 받으면 완성입니다.
 
 **DreamFusion 구조:**
@@ -97,6 +137,24 @@ $$\nabla_\theta \mathcal{L}_{SDS} = \mathbb{E}_{t, \epsilon}\left[ w(t) \left( \
 
 ### 개념 3: Zero-1-to-3 - 이미지에서 3D로
 
+> 📊 **그림 3**: Zero-1-to-3 파이프라인 — 단일 이미지에서 멀티뷰 생성 후 3D 복원
+
+```mermaid
+flowchart LR
+    A["단일 입력 이미지"] --> B["Zero-1-to-3<br/>Fine-tuned SD"]
+    CAM["카메라 변환<br/>방위각, 고도각, 거리"] --> B
+    B --> C1["뷰 1<br/>정면"]
+    B --> C2["뷰 2<br/>측면"]
+    B --> C3["뷰 3<br/>후면"]
+    B --> C4["뷰 N<br/>..."]
+    C1 --> D["NeRF 또는 3DGS<br/>3D 복원"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    D --> E["최종 3D 모델"]
+```
+
+
 > 💡 **비유**: 사진 한 장만 보고 뒷모습을 상상해보세요. 사람은 경험을 바탕으로 뒷모습을 추측합니다. Zero-1-to-3는 수백만 장의 3D 데이터로 학습해서 **단일 이미지의 다른 각도를 상상**합니다.
 
 **Zero-1-to-3(2023)**는 단일 이미지에서 다른 시점의 이미지를 생성합니다.
@@ -119,6 +177,23 @@ Stable Diffusion을 fine-tune하여:
 Zero-1-to-3로 여러 각도 이미지 생성 → NeRF/3DGS로 3D 복원
 
 ### 개념 4: SDS의 변형들
+
+> 📊 **그림 4**: SDS 변형들의 개선 방향 비교
+
+```mermaid
+graph TD
+    SDS["SDS<br/>DreamFusion"] --> P1["과포화 문제"]
+    SDS --> P2["디테일 부족"]
+    SDS --> P3["야누스 문제"]
+    P1 --> VSD["VSD<br/>ProlificDreamer"]
+    P2 --> VSD
+    P1 --> ISM["ISM<br/>구간 스코어 매칭"]
+    P3 --> CSD["CSD<br/>분류기 스코어"]
+    VSD --> R1["LoRA 모델 추가<br/>고품질, 느림"]
+    ISM --> R2["두 노이즈 레벨<br/>일관성 활용"]
+    CSD --> R3["CFG classifier만<br/>안정적 학습"]
+```
+
 
 원본 SDS에는 몇 가지 문제가 있습니다:
 
@@ -148,6 +223,28 @@ $$\mathcal{L}_{ISM} = \|D(x_{t_1}) - D(x_{t_2})\|$$
 CFG의 classifier 부분만 사용하여 더 안정적인 학습.
 
 ### 개념 5: 최신 Text-to-3D 모델들
+
+> 📊 **그림 5**: Text-to-3D 패러다임의 진화 — 최적화 기반에서 Feed-forward로
+
+```mermaid
+flowchart TD
+    subgraph 최적화 기반
+        A["DreamFusion<br/>약 1.5시간"] --> B["Magic3D<br/>2단계, 약 40분"]
+        B --> C["ProlificDreamer<br/>VSD, 약 10시간"]
+    end
+    subgraph 하이브리드
+        D["DreamGaussian<br/>3DGS, 약 2분"]
+    end
+    subgraph Feed-forward
+        E["LGM<br/>약 5초"]
+        F["Instant3D<br/>수 초"]
+    end
+    A -->|"품질 개선"| C
+    A -->|"속도 개선"| D
+    D -->|"패러다임 전환"| E
+    E --- F
+```
+
 
 **2024-2025년 주요 발전:**
 

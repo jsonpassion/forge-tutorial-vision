@@ -21,6 +21,22 @@ Python 코드로 파이프라인을 짜는 건 유연하지만, 매번 코드를
 
 ### 개념 1: 노드 기반 인터페이스
 
+> 📊 **그림 1**: ComfyUI 기본 텍스트-투-이미지 워크플로우 흐름
+
+```mermaid
+flowchart LR
+    A["Load Checkpoint"] -->|MODEL| D["KSampler"]
+    A -->|CLIP| B["CLIP Text Encode<br/>Positive"]
+    A -->|CLIP| C["CLIP Text Encode<br/>Negative"]
+    B -->|CONDITIONING| D
+    C -->|CONDITIONING| D
+    E["Empty Latent Image"] -->|LATENT| D
+    D -->|LATENT| F["VAE Decode"]
+    A -->|VAE| F
+    F -->|IMAGE| G["Save Image"]
+```
+
+
 > 💡 **비유**: ComfyUI는 **레고 블록**과 같습니다. 각 블록(노드)이 특정 기능을 담당하고, 블록들을 연결하면 원하는 결과물(이미지)이 나옵니다. 블록 순서를 바꾸거나 새 블록을 추가하면 완전히 다른 결과가 나오죠.
 
 **ComfyUI의 기본 구성 요소:**
@@ -95,6 +111,26 @@ Python 코드로 파이프라인을 짜는 건 유연하지만, 매번 코드를
 > ⚠️ **흔한 오해**: "노드가 너무 많아서 복잡하다" — 처음엔 그렇게 느껴지지만, 대부분의 워크플로우는 **10개 미만의 노드**로 구성됩니다. 기본 패턴을 익히면 금방 익숙해져요.
 
 ### 개념 4: LoRA, ControlNet, IP-Adapter 통합
+
+> 📊 **그림 2**: ControlNet + LoRA 복합 워크플로우 구조
+
+```mermaid
+flowchart TD
+    A["Load Checkpoint"] -->|MODEL, CLIP| B["Load LoRA"]
+    B -->|MODEL| H["KSampler"]
+    B -->|CLIP| C["CLIP Text Encode<br/>Positive"]
+    B -->|CLIP| D["CLIP Text Encode<br/>Negative"]
+    E["Load ControlNet"] -->|CONTROLNET| G["Apply ControlNet"]
+    F["Load Image"] --> F2["Canny Edge Detection"]
+    F2 -->|IMAGE| G
+    C -->|CONDITIONING| G
+    G -->|CONDITIONING| H
+    D -->|CONDITIONING| H
+    I["Empty Latent Image"] -->|LATENT| H
+    H -->|LATENT| J["VAE Decode"]
+    J -->|IMAGE| K["Save Image"]
+```
+
 
 **LoRA 추가:**
 
@@ -261,6 +297,19 @@ ComfyUI 실행 후 기본 워크플로우가 로드됩니다. 주요 설정:
 
 ### ComfyUI의 메모리 관리
 
+> 📊 **그림 3**: ComfyUI 동적 메모리 관리 흐름
+
+```mermaid
+stateDiagram-v2
+    [*] --> 디스크저장
+    디스크저장 --> CPU메모리: 워크플로우에서 참조
+    CPU메모리 --> GPU메모리: 노드 실행 시 로드
+    GPU메모리 --> CPU메모리: 실행 완료 후 언로드
+    CPU메모리 --> 디스크저장: VRAM 부족 시 해제
+    GPU메모리 --> GPU메모리: 연속 사용 시 유지
+```
+
+
 ComfyUI가 AUTOMATIC1111보다 효율적인 이유 중 하나는 **동적 메모리 관리**입니다:
 
 - 사용하지 않는 모델을 **자동으로 언로드**
@@ -270,6 +319,26 @@ ComfyUI가 AUTOMATIC1111보다 효율적인 이유 중 하나는 **동적 메모
 이런 최적화 덕분에 복잡한 워크플로우도 일반 소비자 GPU에서 실행할 수 있습니다.
 
 ### API 모드로 프로덕션 배포
+
+> 📊 **그림 4**: ComfyUI API 모드 요청 흐름
+
+```mermaid
+sequenceDiagram
+    participant Client as 클라이언트
+    participant API as ComfyUI API<br/>:8188
+    participant Engine as 실행 엔진
+    participant GPU as GPU
+    Client->>API: POST /prompt (워크플로우 JSON)
+    API->>API: 워크플로우 검증
+    API->>Engine: 실행 큐에 추가
+    Engine->>GPU: 노드 순서대로 실행
+    GPU-->>Engine: 생성 결과
+    Engine-->>API: 이미지 저장
+    API-->>Client: prompt_id 반환
+    Client->>API: GET /history/(prompt_id)
+    API-->>Client: 결과 이미지 경로
+```
+
 
 ComfyUI는 API 서버로도 사용할 수 있습니다:
 

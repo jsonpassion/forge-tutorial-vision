@@ -6,6 +6,23 @@
 
 GAN의 다양한 변형들을 배웠으니, 이제 실전에서 어떻게 활용되는지 살펴볼 차례입니다. 이미지 초해상도(Super Resolution), 인페인팅(Inpainting), 얼굴 편집, 데이터 증강까지 — GAN은 "그럴듯한 이미지를 만든다"는 능력을 놀라울 정도로 다양한 곳에 적용하고 있습니다.
 
+> 📊 **그림 1**: GAN 주요 응용 분야 전체 맵
+
+```mermaid
+graph TD
+    GAN["GAN 응용"] --> SR["초해상도<br/>Super Resolution"]
+    GAN --> INP["인페인팅<br/>Inpainting"]
+    GAN --> FACE["얼굴 편집<br/>Face Editing"]
+    GAN --> AUG["데이터 증강<br/>Data Augmentation"]
+    GAN --> STYLE["스타일 변환<br/>Style Transfer"]
+    SR --> SR1["SRGAN / ESRGAN"]
+    INP --> INP1["DeepFill / LaMa"]
+    FACE --> FACE1["InterFaceGAN / StarGAN"]
+    AUG --> AUG1["의료 / 자율주행 / 위성"]
+    STYLE --> STYLE1["CycleGAN / Pix2Pix"]
+```
+
+
 **선수 지식**: [GAN 기초](./03-gan-basics.md), [GAN 변형들](./04-gan-variants.md)
 **학습 목표**:
 - GAN 기반 이미지 초해상도(Super Resolution)의 원리를 이해한다
@@ -24,6 +41,22 @@ GAN의 응용 사례를 이해하면 두 가지 이점이 있습니다. 첫째, 
 > 💡 **비유**: 오래된 VHS 테이프의 영상을 4K로 업스케일링한다고 상상해보세요. 단순히 픽셀을 늘리면 뭉개진 이미지가 되지만, GAN은 "고화질 사진은 이런 디테일을 가지고 있다"는 지식을 바탕으로 **없던 디테일을 그럴듯하게 채워넣습니다**.
 
 **SRGAN(Super-Resolution GAN, 2017)**은 이 분야의 선구자입니다:
+
+> 📊 **그림 2**: SRGAN 생성자 아키텍처 흐름
+
+```mermaid
+flowchart LR
+    A["저해상도 이미지<br/>32x32"] --> B["초기 특징 추출<br/>Conv 9x9 + PReLU"]
+    B --> C["잔차 블록 x5<br/>Residual Blocks"]
+    C --> D["전역 잔차 연결<br/>Skip Connection"]
+    B --> D
+    D --> E["PixelShuffle<br/>업스케일링"]
+    E --> F["고해상도 이미지<br/>64x64"]
+    F --> G{"판별자"}
+    H["실제 고해상도"] --> G
+    G --> I["Perceptual Loss<br/>VGG 특징 맵 비교"]
+```
+
 
 - **생성자**: 저해상도 이미지를 입력받아 고해상도 이미지를 출력
 - **판별자**: 생성된 고해상도와 실제 고해상도를 구별
@@ -96,6 +129,20 @@ print(f"고해상도 출력: {high_res.shape}")   # [1, 3, 64, 64]
 
 인페인팅(Inpainting)은 이미지의 일부 영역을 자연스럽게 채우는 기술입니다:
 
+> 📊 **그림 3**: GAN 기반 인페인팅 처리 흐름
+
+```mermaid
+flowchart LR
+    A["원본 이미지"] --> C["마스크 적용<br/>제거할 영역 지정"]
+    B["마스크"] --> C
+    C --> D["인페인팅 모델<br/>DeepFill / LaMa"]
+    D --> E["주변 맥락 분석"]
+    E --> F["빈 영역 생성"]
+    F --> G["복원된 이미지"]
+    style D fill:#f9f,stroke:#333
+```
+
+
 - **마스크 영역 제거**: 불필요한 객체(전선, 사람 등)를 지우고 배경으로 채움
 - **손상 복원**: 오래된 사진의 긁힘, 얼룩 등을 복원
 - **창작 도구**: 이미지의 일부를 새로운 내용으로 교체
@@ -107,6 +154,24 @@ print(f"고해상도 출력: {high_res.shape}")   # [1, 3, 64, 64]
 ### 개념 3: 얼굴 편집과 속성 변환
 
 GAN의 잠재 공간을 탐색하면 이미지의 **특정 속성만 변경**할 수 있습니다:
+
+> 📊 **그림 4**: InterFaceGAN 잠재 공간 속성 편집 원리
+
+```mermaid
+flowchart TD
+    A["원본 잠재 벡터 w"] --> B["속성 방향 탐색"]
+    B --> C1["나이 방향"]
+    B --> C2["안경 방향"]
+    B --> C3["표정 방향"]
+    C1 --> D1["w + a * 나이 벡터<br/>= 나이 든 얼굴"]
+    C1 --> D2["w - a * 나이 벡터<br/>= 젊은 얼굴"]
+    C2 --> D3["w + a * 안경 벡터<br/>= 안경 착용"]
+    D1 --> E["StyleGAN<br/>Generator"]
+    D2 --> E
+    D3 --> E
+    E --> F["편집된 얼굴 이미지"]
+```
+
 
 **InterFaceGAN**: StyleGAN의 잠재 공간에서 "나이", "성별", "안경 착용" 등의 방향을 찾아 이동
 

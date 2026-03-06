@@ -47,6 +47,33 @@ Transformer의 전체 구조를 한눈에 정리하면 이렇습니다:
 
 원래 논문에서는 인코더와 디코더 각각 **N=6개 레이어**를 쌓았습니다.
 
+> 📊 **그림 1**: Transformer의 전체 Encoder-Decoder 구조
+
+```mermaid
+flowchart TD
+    subgraph Encoder["인코더 Encoder"]
+        E1["입력 임베딩"] --> E2["+ Positional Encoding"]
+        E2 --> E3["Multi-Head Self-Attention"]
+        E3 --> E4["Add & Norm"]
+        E4 --> E5["Feed-Forward Network"]
+        E5 --> E6["Add & Norm"]
+        E6 -.->|"x N 반복"| E3
+    end
+    subgraph Decoder["디코더 Decoder"]
+        D1["출력 임베딩"] --> D2["+ Positional Encoding"]
+        D2 --> D3["Masked Self-Attention"]
+        D3 --> D4["Add & Norm"]
+        D4 --> D5["Cross-Attention"]
+        D5 --> D6["Add & Norm"]
+        D6 --> D7["Feed-Forward Network"]
+        D7 --> D8["Add & Norm"]
+        D8 -.->|"x N 반복"| D3
+    end
+    E6 -->|"K, V 전달"| D5
+    D8 --> OUT["Linear + Softmax"]
+```
+
+
 > ⚠️ **흔한 오해**: "Transformer는 항상 Encoder + Decoder를 함께 사용한다"고 생각하기 쉽지만, 실제로 현대 모델 대부분은 **한쪽만** 사용합니다. BERT는 Encoder만, GPT는 Decoder만 사용하죠. 원래의 Encoder-Decoder 구조는 번역처럼 입력과 출력 형태가 다른 작업에 적합합니다.
 
 ### 개념 2: Positional Encoding — "시계의 시침, 분침, 초침"
@@ -77,6 +104,22 @@ $$PE_{(pos, 2i+1)} = \cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)$$
 이 방식의 수학적인 아름다움은, 임의의 고정 오프셋 $k$에 대해 $PE(pos+k)$가 $PE(pos)$의 **선형 변환**으로 표현된다는 점입니다. 덕분에 모델이 "3칸 떨어진 위치"같은 **상대적 위치**를 쉽게 학습할 수 있어요.
 
 ### 개념 3: Feed-Forward Network — "정보 가공 공장"
+
+> 📊 **그림 2**: Encoder 블록 하나의 내부 흐름 (Pre-Norm 방식)
+
+```mermaid
+flowchart LR
+    X["입력 x"] --> LN1["LayerNorm"]
+    LN1 --> MHA["Multi-Head<br/>Self-Attention"]
+    MHA --> ADD1(("+ 잔차 연결"))
+    X --> ADD1
+    ADD1 --> LN2["LayerNorm"]
+    LN2 --> FFN["Feed-Forward<br/>Network"]
+    FFN --> ADD2(("+ 잔차 연결"))
+    ADD1 --> ADD2
+    ADD2 --> Y["출력"]
+```
+
 
 > 💡 **비유**: Self-Attention이 "회의실에서 모든 사람의 의견을 듣는 과정"이라면, Feed-Forward Network(FFN)은 "회의 내용을 정리해서 결론을 내리는 과정"입니다. 어텐션은 **어디에서 정보를 가져올지** 결정하고, FFN은 가져온 정보로 **무엇을 할지** 결정합니다.
 
@@ -123,6 +166,27 @@ $$\text{LayerNorm}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} 
 
 Pre-Norm이 학습 초기 안정성이 훨씬 좋아서, 수십~수백 레이어를 쌓는 대규모 모델에서는 거의 필수가 되었습니다.
 
+> 📊 **그림 3**: Post-Norm vs Pre-Norm 비교
+
+```mermaid
+flowchart TD
+    subgraph PostNorm["Post-Norm (원래 논문)"]
+        PA["입력 x"] --> PB["SubLayer"]
+        PB --> PC(("+ 잔차"))
+        PA --> PC
+        PC --> PD["LayerNorm"]
+        PD --> PE["출력"]
+    end
+    subgraph PreNorm["Pre-Norm (현대 표준)"]
+        QA["입력 x"] --> QB["LayerNorm"]
+        QB --> QC["SubLayer"]
+        QC --> QD(("+ 잔차"))
+        QA --> QD
+        QD --> QE["출력"]
+    end
+```
+
+
 ### 개념 5: 현대 Transformer 변형들
 
 원래의 Encoder-Decoder 구조에서 발전한 세 가지 주요 변형이 있습니다:
@@ -134,6 +198,26 @@ Pre-Norm이 학습 초기 안정성이 훨씬 좋아서, 수십~수백 레이어
 | **Encoder-Decoder** | T5, BART | 번역, 요약 | 캡셔닝, VQA |
 
 컴퓨터 비전에서는 주로 **Encoder-Only** 구조를 사용합니다. 다음 섹션에서 배울 [Vision Transformer (ViT)](./03-vit.md)가 바로 Encoder-Only Transformer입니다.
+
+> 📊 **그림 5**: 현대 Transformer 변형 계보
+
+```mermaid
+graph TD
+    T["Transformer<br/>(Encoder-Decoder)"] --> EO["Encoder-Only"]
+    T --> DO["Decoder-Only"]
+    T --> ED["Encoder-Decoder 개량"]
+    EO --> BERT["BERT"]
+    EO --> ViT["ViT"]
+    EO --> Swin["Swin Transformer"]
+    DO --> GPT["GPT"]
+    DO --> LLaMA["LLaMA"]
+    ED --> T5["T5"]
+    ED --> BART["BART"]
+    style EO fill:#4a9eff,color:#fff
+    style ViT fill:#4a9eff,color:#fff
+    style Swin fill:#4a9eff,color:#fff
+```
+
 
 ## 실습: 직접 해보기
 
@@ -336,6 +420,29 @@ print(f"총 파라미터: {sum(p.numel() for p in encoder.parameters()):,}")
 
 - **Self-Attention**: Q, K, V 모두 같은 출처 → 자기 자신의 관계 파악
 - **Cross-Attention**: Q는 디코더에서, K와 V는 인코더에서 → 두 시퀀스 간 관계 파악
+
+> 📊 **그림 4**: Self-Attention vs Cross-Attention 데이터 흐름
+
+```mermaid
+flowchart LR
+    subgraph SA["Self-Attention"]
+        SX["같은 시퀀스 X"] --> SQ["Q"]
+        SX --> SK["K"]
+        SX --> SV["V"]
+        SQ --> SOUT["Attention 출력"]
+        SK --> SOUT
+        SV --> SOUT
+    end
+    subgraph CA["Cross-Attention"]
+        DEC["디코더 출력"] --> CQ["Q"]
+        ENC["인코더 출력"] --> CK["K"]
+        ENC --> CV["V"]
+        CQ --> COUT["Attention 출력"]
+        CK --> COUT
+        CV --> COUT
+    end
+```
+
 
 이 패턴은 컴퓨터 비전에서도 중요하게 쓰입니다. [DETR](../07-object-detection/05-detr.md)에서 Object Query가 이미지 특징과 교차 어텐션하여 객체를 탐지하고, [Mask2Former](../08-segmentation/03-panoptic-segmentation.md)에서 마스크 쿼리가 특징 맵과 교차 어텐션하여 세그멘테이션을 수행하며, [SAM](../08-segmentation/04-sam.md)에서 프롬프트 임베딩이 이미지 임베딩과 교차 어텐션하여 마스크를 예측합니다. Stable Diffusion의 텍스트-이미지 생성에서도 Cross-Attention이 핵심 역할을 하죠.
 

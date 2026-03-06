@@ -34,6 +34,23 @@
 
 이 섹션에서는 주로 **단안 깊이 추정(Monocular Depth Estimation)**에 집중합니다. 카메라 한 대로 깊이를 예측하는 가장 도전적이면서도 실용적인 문제입니다.
 
+> 📊 **그림 1**: 깊이 추정 방식의 분류
+
+```mermaid
+graph TD
+    A["깊이 추정<br/>Depth Estimation"] --> B["단안<br/>Monocular"]
+    A --> C["스테레오<br/>Stereo"]
+    A --> D["Multi-View"]
+    A --> E["RGB-D 센서"]
+    B --> B1["이미지 1장"]
+    B --> B2["스케일 모호성"]
+    C --> C1["이미지 2장"]
+    C --> C2["기하학적 정확도"]
+    D --> D1["이미지 N장"]
+    E --> E1["깊이 센서 필요"]
+```
+
+
 ### 개념 2: 상대적 깊이 vs 절대적 깊이
 
 > 💡 **비유**: 상대적 깊이는 **"A가 B보다 가깝다"**를 아는 것이고, 절대적 깊이(Metric Depth)는 **"A는 2.5m, B는 5.0m 떨어져 있다"**를 아는 것입니다. 전자는 순서만 알고, 후자는 실제 거리를 압니다.
@@ -57,6 +74,26 @@
 3. **학습 데이터**: 실제 깊이가 측정된 대규모 데이터셋
 
 ### 개념 3: 깊이 추정 아키텍처의 진화
+
+> 📊 **그림 2**: 깊이 추정 아키텍처의 세대별 진화
+
+```mermaid
+flowchart LR
+    subgraph G1["1세대: 2014~2018"]
+        A1["CNN 인코더-디코더<br/>Eigen, FCRN"]
+    end
+    subgraph G2["2세대: 2018~2022"]
+        A2["Multi-Scale 융합<br/>AdaBins, BTS"]
+    end
+    subgraph G3["3세대: 2022~현재"]
+        A3["Transformer + Foundation<br/>DPT, Depth Anything V2"]
+    end
+    G1 --> G2 --> G3
+    A1 -.-|"저해상도, 경계 블러"| A2
+    A2 -.-|"경계 개선, 도메인 특화"| A3
+    A3 -.-|"Zero-Shot, 범용성"| Z["실용 수준 도달"]
+```
+
 
 **1세대: CNN 기반 (2014~2018)**
 
@@ -113,6 +150,23 @@
 
 거대한 Teacher 모델이 생성한 깊이 라벨을 사용해 작은 Student 모델을 학습합니다. [지식 증류(Knowledge Distillation)](../06-image-classification/03-transfer-learning.md)의 고급 버전이죠.
 
+> 📊 **그림 3**: Depth Anything V2의 Teacher-Student 학습 파이프라인
+
+```mermaid
+flowchart TD
+    A["합성 데이터<br/>Hypersim, Virtual KITTI"] --> B["Teacher 모델<br/>1.3B 파라미터"]
+    B --> C["고품질 Pseudo-label 생성"]
+    D["실제 이미지<br/>6천만장 이상"] --> C
+    C --> E["Student 모델 학습"]
+    E --> F["Small: 25M"]
+    E --> G["Base: 97M"]
+    E --> H["Large: 335M"]
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style E fill:#e8f5e9
+```
+
+
 **3. 다양한 모델 크기 제공**
 
 | 모델 | 파라미터 | 속도 | 용도 |
@@ -127,6 +181,23 @@
 단안 깊이 추정이 어려운 이유는 **기하학적 제약이 없기** 때문입니다. 스테레오 비전은 두 카메라의 **시차(Disparity)**를 이용해 기하학적으로 깊이를 계산합니다.
 
 > 💡 **비유**: 손가락을 코 앞에 두고 한쪽 눈씩 번갈아 감아보세요. 손가락 위치가 **좌우로 움직이죠**? 이게 시차입니다. 가까운 물체일수록 많이 움직이고, 먼 물체는 거의 안 움직입니다.
+
+> 📊 **그림 4**: 스테레오 깊이 추정 원리 — 시차와 깊이의 관계
+
+```mermaid
+flowchart LR
+    subgraph CAM["스테레오 카메라"]
+        L["왼쪽 카메라"] ---|"Baseline B"| R["오른쪽 카메라"]
+    end
+    L --> M1["왼쪽 이미지"]
+    R --> M2["오른쪽 이미지"]
+    M1 --> SM["스테레오 매칭<br/>같은 점 찾기"]
+    M2 --> SM
+    SM --> DI["시차 d 계산<br/>좌우 위치 차이"]
+    DI --> DE["깊이 Z = f x B / d"]
+    DE --> PC["3D 포인트 클라우드"]
+```
+
 
 **스테레오 깊이 계산:**
 
@@ -146,6 +217,21 @@
 | **LEAStereo** | NAS 기반 | 자동 아키텍처 탐색 |
 
 ## 실습: 깊이 추정 모델 사용하기
+
+> 📊 **그림 5**: 깊이 추정 실습 파이프라인
+
+```mermaid
+flowchart LR
+    A["RGB 이미지"] --> B["모델 선택"]
+    B --> C1["Depth Anything V2<br/>상대적 깊이"]
+    B --> C2["ZoeDepth<br/>절대적 깊이"]
+    C1 --> D["깊이맵"]
+    C2 --> D
+    D --> E1["2D 시각화<br/>컬러맵 표시"]
+    D --> E2["3D 포인트 클라우드<br/>Open3D 변환"]
+    D --> E3["깊이 분석<br/>거리 측정"]
+```
+
 
 ### Depth Anything V2로 깊이 추정
 

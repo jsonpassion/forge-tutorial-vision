@@ -45,6 +45,18 @@
 
 ### 개념 2: Spacetime Patches — 비디오를 토큰으로
 
+> 📊 **그림 1**: 비디오의 Spacetime 패치화 과정
+
+```mermaid
+flowchart LR
+    A["원본 비디오<br/>(T, H, W, 3)"] --> B["3D VAE 압축<br/>시공간 축소"]
+    B --> C["Latent 텐서<br/>(T', H', W', C)"]
+    C --> D["3D 패치 분할<br/>(t x h x w)"]
+    D --> E["1D 시퀀스로 Flatten<br/>(N, D)"]
+    E --> F["Transformer 입력<br/>Self-Attention"]
+```
+
+
 > 💡 **비유**: 영화 필름을 잘라서 **퍼즐 조각**으로 만드는 것과 같습니다. 각 조각에는 특정 위치의 짧은 시간 동안 정보가 담겨 있죠. 이 조각들을 Transformer가 이해하고 재조합해서 완성된 영화를 만듭니다.
 
 **기존 이미지 패치 vs Spacetime 패치:**
@@ -73,6 +85,21 @@
 이 28,000개 토큰이 **GPT처럼** Transformer에 입력됩니다.
 
 ### 개념 3: Sora 아키텍처 분석
+
+> 📊 **그림 2**: Sora 추정 아키텍처 흐름
+
+```mermaid
+flowchart TD
+    A["텍스트 프롬프트"] --> B["텍스트 인코더<br/>GPT / T5 계열"]
+    C["이미지 / 비디오<br/>선택적 입력"] --> D["3D VAE 인코더<br/>시공간 압축"]
+    D --> E["Spacetime Patches<br/>3D 패치 토큰화"]
+    B --> F["DiT 백본<br/>수십~수백 레이어"]
+    E --> F
+    G["타임스텝 임베딩"] --> F
+    F --> H["3D VAE 디코더"]
+    H --> I["출력 비디오"]
+```
+
 
 OpenAI는 Sora의 세부 사항을 공개하지 않았지만, 기술 보고서와 분석을 통해 핵심 구조를 추론할 수 있습니다.
 
@@ -116,6 +143,22 @@ Sora의 혁신 중 하나는 **고정 해상도/길이가 아닌** 유연한 생
 이는 **패치 그리드의 크기**를 조절해서 구현합니다. 학습 시 다양한 크기의 비디오를 사용하고, 추론 시 원하는 크기의 패치 그리드를 초기화하면 됩니다.
 
 ### 개념 4: "World Simulator" — 물리 세계 시뮬레이션
+
+> 📊 **그림 3**: Sora의 World Simulator 능력 계층
+
+```mermaid
+graph TD
+    A["World Simulator"] --> B["3D 공간 이해"]
+    A --> C["물리 시뮬레이션"]
+    A --> D["장기 일관성"]
+    B --> B1["카메라 회전 시<br/>형태 유지"]
+    B --> B2["물체 영속성<br/>가려져도 인식"]
+    C --> C1["물, 불, 연기<br/>자연스러운 움직임"]
+    C --> C2["중력, 충돌<br/>기본 물리"]
+    D --> D1["캐릭터 일관성<br/>60초 유지"]
+    D --> D2["배경 연속성"]
+```
+
 
 > 💡 **비유**: Sora는 단순한 "비디오 생성기"가 아니라 **머릿속으로 물리 세계를 상상하는 두뇌**에 가깝습니다. "공을 던지면 어디로 날아갈까?"를 예측할 수 있어야 자연스러운 비디오가 되죠.
 
@@ -290,6 +333,31 @@ print("✅ LTX-Video 생성 완료!")
 
 ### DiT 기반 비디오 모델 구조 이해
 
+> 📊 **그림 4**: VideoDiTBlock 내부 처리 흐름
+
+```mermaid
+flowchart TD
+    X["입력 토큰 x"] --> N1["LayerNorm + AdaLN"]
+    T["타임스텝 임베딩"] --> ADA["AdaLN 파라미터<br/>scale, shift x 3쌍"]
+    ADA --> N1
+    N1 --> SA["Self-Attention<br/>시공간 전체"]
+    SA --> R1["Residual 합산"]
+    X --> R1
+    R1 --> N2["LayerNorm + AdaLN"]
+    ADA --> N2
+    TXT["텍스트 임베딩"] --> CA["Cross-Attention<br/>텍스트 조건"]
+    N2 --> CA
+    CA --> R2["Residual 합산"]
+    R1 --> R2
+    R2 --> N3["LayerNorm + AdaLN"]
+    ADA --> N3
+    N3 --> MLP["MLP<br/>GELU 활성화"]
+    MLP --> R3["Residual 합산"]
+    R2 --> R3
+    R3 --> OUT["출력 토큰"]
+```
+
+
 ```python
 import torch
 import torch.nn as nn
@@ -410,6 +478,17 @@ if __name__ == "__main__":
 **2024년 — 비디오 생성 폭발의 해**
 
 2024년은 비디오 생성 AI의 폭발적 성장의 해였습니다. Sora 발표 이후 불과 10개월 만에:
+
+> 📊 **그림 5**: 2024년 비디오 생성 모델 타임라인
+
+```mermaid
+flowchart LR
+    A["2024.02<br/>OpenAI Sora 발표"] --> B["2024.05<br/>Google Veo"]
+    B --> C["2024.06<br/>Runway Gen-3<br/>Kuaishou Kling"]
+    C --> D["2024.H2<br/>Open-Sora<br/>CogVideoX<br/>Mochi 1"]
+    D --> E["2024.12<br/>Sora 공개<br/>Google Veo 2"]
+```
+
 
 - **Google Veo/Veo 2**: Sora에 필적하는 품질
 - **Runway Gen-3**: 프로 크리에이터용 도구

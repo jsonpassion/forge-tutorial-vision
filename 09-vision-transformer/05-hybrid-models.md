@@ -40,6 +40,28 @@ CNN과 Transformer는 상반된 특성을 가지고 있습니다:
 
 이 특성을 조합하는 대표적인 패턴 4가지가 있습니다:
 
+> 📊 **그림 1**: 하이브리드 모델의 4가지 설계 패턴
+
+```mermaid
+graph TD
+    subgraph P1["패턴 1: 초반 CNN + 후반 Transformer"]
+        A1["입력"] --> B1["CNN 레이어"] --> C1["Transformer 레이어"] --> D1["출력"]
+    end
+    subgraph P2["패턴 2: CNN + Transformer 설계 원칙"]
+        A2["입력"] --> B2["CNN + 큰 커널<br/>LayerNorm, GELU"] --> D2["출력"]
+    end
+    subgraph P3["패턴 3: 병렬 이중 경로"]
+        A3["입력"] --> B3["CNN 브랜치"]
+        A3 --> C3["Transformer 브랜치"]
+        B3 --> D3["합산/결합"]
+        C3 --> D3
+    end
+    subgraph P4["패턴 4: 모바일 최적화"]
+        A4["입력"] --> B4["경량 Conv"] --> C4["효율적 Attention"] --> D4["출력"]
+    end
+```
+
+
 **패턴 1: 초반 CNN + 후반 Transformer**
 - 초기 레이어에서 CNN으로 로컬 특징 추출
 - 깊은 레이어에서 Transformer로 글로벌 관계 파악
@@ -64,6 +86,18 @@ CNN과 Transformer는 상반된 특성을 가지고 있습니다:
 [ConvNeXt](../05-cnn-architectures/06-convnext.md)는 Ch05에서 이미 배웠지만, 하이브리드 관점에서 다시 살펴볼 가치가 있습니다.
 
 ResNet에서 시작하여 Swin Transformer의 설계 요소를 하나씩 적용한 결과:
+
+> 📊 **그림 4**: ConvNeXt의 진화 — ResNet에서 Transformer 설계 원칙 적용
+
+```mermaid
+flowchart LR
+    A["ResNet"] -->|Patchify Stem| B["4x4 비겹침 Conv"]
+    B -->|큰 커널| C["7x7 Depthwise Conv"]
+    C -->|Inverted Bottleneck| D["채널 4배 확장-축소"]
+    D -->|정규화 변경| E["LayerNorm + GELU"]
+    E --> F["ConvNeXt<br/>Swin급 성능 달성"]
+```
+
 
 1. **Patchify Stem**: 4×4 비겹침 합성곱으로 시작 (ViT의 패치 분할과 동일)
 2. **큰 커널**: 3×3 → **7×7** Depthwise Convolution (Swin의 7×7 윈도우에 대응)
@@ -102,6 +136,22 @@ CoAtNet의 구조:
 | S3 | H/16 | Transformer | 고수준 글로벌 이해 |
 | S4 | H/32 | Transformer | 최종 표현 |
 
+> 📊 **그림 2**: CoAtNet의 단계별 구조 — Conv에서 Transformer로 점진적 전환
+
+```mermaid
+flowchart LR
+    S0["S0<br/>Conv MBConv<br/>H/2"] --> S1["S1<br/>Conv MBConv<br/>H/4"]
+    S1 --> S2["S2<br/>Transformer<br/>H/8"]
+    S2 --> S3["S3<br/>Transformer<br/>H/16"]
+    S3 --> S4["S4<br/>Transformer<br/>H/32"]
+    style S0 fill:#4a90d9,color:#fff
+    style S1 fill:#4a90d9,color:#fff
+    style S2 fill:#e67e22,color:#fff
+    style S3 fill:#e67e22,color:#fff
+    style S4 fill:#e67e22,color:#fff
+```
+
+
 ### 개념 4: 모바일 하이브리드 — "스마트폰에서도 Transformer를"
 
 모바일 기기에서 ViT를 실행하는 것은 현실적으로 어렵습니다. 하지만 하이브리드 설계로 효율성을 극대화한 모델들이 있습니다.
@@ -111,6 +161,21 @@ CoAtNet의 구조:
 > 💡 **비유**: 돋보기(합성곱)로 가까운 곳을 자세히 본 다음, 망원경(어텐션)으로 멀리까지 한 번 살핀 뒤, 다시 돋보기로 세부 사항을 확인하는 과정을 반복합니다.
 
 - 합성곱으로 로컬 특징 추출 → Transformer로 글로벌 관계 파악
+
+> 📊 **그림 3**: MobileViT 블록의 처리 흐름
+
+```mermaid
+flowchart TD
+    A["입력 특징맵"] --> B["Depthwise Conv<br/>로컬 특징 추출"]
+    B --> C["Pointwise Conv"]
+    C --> D["Unfold<br/>2D를 토큰 시퀀스로 변환"]
+    D --> E["Self-Attention<br/>글로벌 관계 파악"]
+    E --> F["Fold<br/>토큰을 2D로 복원"]
+    F --> G["Conv 융합"]
+    G --> H["잔차 연결 + 출력"]
+    A -.->|skip connection| H
+```
+
 - **6M 파라미터**로 ImageNet 78.4% 달성
 - MobileNetV3보다 3.2% 높은 정확도
 
@@ -306,6 +371,24 @@ print(f"파라미터: {sum(p.numel() for p in block.parameters()):,}")
 3. **하이브리드가 실용적**: 실무에서는 순수 모델보다 장점만 취한 하이브리드가 더 유용한 경우가 많다
 
 ### 2025년의 방향: 그 너머로
+
+> 📊 **그림 5**: 2025년 비전 모델 발전의 세 가지 방향
+
+```mermaid
+graph TD
+    A["비전 모델 발전 방향"] --> B["효율성 극대화"]
+    A --> C["멀티모달 통합"]
+    A --> D["자기지도 학습"]
+    B --> B1["FastViT"]
+    B --> B2["EfficientViT"]
+    C --> C1["CLIP"]
+    C --> C2["LLaVA"]
+    D --> D1["DINOv2/v3"]
+    B1 --> E["모바일/엣지 배포"]
+    C2 --> F["이미지-텍스트 이해"]
+    D1 --> G["라벨 없는 대규모 학습"]
+```
+
 
 현재 비전 모델의 발전 방향은 크게 세 가지입니다:
 

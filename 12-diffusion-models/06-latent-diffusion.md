@@ -21,6 +21,22 @@ Stable Diffusion을 한 줄로 설명하면 "**Latent Diffusion Model + CLIP 텍
 
 ### 개념 1: 픽셀 공간의 한계
 
+> 📊 **그림 3**: 픽셀 공간 vs 잠재 공간 Diffusion 비교
+
+```mermaid
+flowchart LR
+    subgraph PX ["픽셀 공간 Diffusion"]
+        direction LR
+        P1["노이즈<br/>512x512x3"] --> P2["U-Net<br/>786,432 값 처리"] --> P3["이미지"]
+    end
+    subgraph LT ["잠재 공간 Diffusion (LDM)"]
+        direction LR
+        L1["노이즈<br/>64x64x4"] --> L2["U-Net<br/>16,384 값 처리"] --> L3["잠재 표현"]
+    end
+    PX ~~~ LT
+```
+
+
 > 💡 **비유**: 512×512 컬러 이미지는 786,432개의 숫자(512 × 512 × 3)로 이루어져 있습니다. DDPM은 이 78만 개 숫자 각각에 대해 노이즈를 예측해야 해요. 마치 **서울시 전체의 먼지를 한 알 한 알 치우는 것**처럼 비효율적이죠.
 
 픽셀 공간에서의 문제:
@@ -29,6 +45,21 @@ Stable Diffusion을 한 줄로 설명하면 "**Latent Diffusion Model + CLIP 텍
 - **비효율성**: 인접 픽셀은 대부분 비슷한 값 — 중복 정보가 많음
 
 ### 개념 2: Latent Diffusion의 핵심 아이디어
+
+> 📊 **그림 1**: Latent Diffusion의 3단계 파이프라인
+
+```mermaid
+flowchart LR
+    A["원본 이미지<br/>512x512x3"] --> B["VAE 인코더"]
+    B --> C["잠재 표현<br/>64x64x4"]
+    C --> D["Diffusion<br/>U-Net"]
+    D --> E["디노이즈된<br/>잠재 표현"]
+    E --> F["VAE 디코더"]
+    F --> G["생성 이미지<br/>512x512x3"]
+    style C fill:#f9f,stroke:#333
+    style E fill:#f9f,stroke:#333
+```
+
 
 > 💡 **비유**: 서울시 전체의 먼지를 치우는 대신, 먼저 서울의 **축소 모형(1/8 스케일)**을 만들고, 그 모형에서 먼지를 치운 뒤, 다시 실물 크기로 확대하는 겁니다. 훨씬 효율적이죠!
 
@@ -49,6 +80,20 @@ LDM은 3단계로 작동합니다:
 > 원본 이미지 → **VAE 인코더** → 잠재 표현(64×64×4) → **Diffusion(U-Net)** → 디노이즈된 잠재 표현 → **VAE 디코더** → 생성된 이미지
 
 ### 개념 3: LDM의 세 기둥
+
+> 📊 **그림 2**: LDM의 세 가지 핵심 모듈과 데이터 흐름
+
+```mermaid
+flowchart TD
+    P["텍스트 프롬프트"] --> TE["텍스트 인코더<br/>CLIP / T5<br/>(고정)"]
+    TE --> |"크로스 어텐션"| UN["U-Net<br/>노이즈 예측기<br/>(학습 대상)"]
+    N["랜덤 노이즈<br/>64x64x4"] --> UN
+    T["타임스텝 t"] --> UN
+    UN --> DL["디노이즈된 잠재 표현"]
+    DL --> VD["VAE 디코더<br/>(고정)"]
+    VD --> IMG["최종 이미지"]
+```
+
 
 LDM은 세 개의 독립적인 모듈로 구성됩니다:
 
@@ -86,6 +131,20 @@ Stable Diffusion의 VAE는 다음과 같은 특징을 가집니다:
 - **KL 정규화**: 잠재 공간이 너무 불규칙해지지 않도록 약한 KL penalty 적용
 
 ### 개념 5: LDM에서 Stable Diffusion으로
+
+> 📊 **그림 4**: LDM에서 Stable Diffusion으로의 발전 흐름
+
+```mermaid
+flowchart LR
+    A["LDM 논문<br/>2022.01"] --> B["SD v1.1~1.5<br/>2022.08~10"]
+    B --> C["SD 2.0~2.1<br/>2022.11~12"]
+    C --> D["SDXL<br/>2023.07"]
+    D --> E["SD3<br/>2024"]
+    E --> F["FLUX<br/>2024"]
+    style A fill:#ffd,stroke:#333
+    style B fill:#dff,stroke:#333
+```
+
 
 2022년 CompVis 팀(하이델베르크 대학)이 LDM 논문을 발표하고, 이를 대규모 데이터셋(LAION-5B)으로 학습한 것이 바로 **Stable Diffusion**입니다.
 

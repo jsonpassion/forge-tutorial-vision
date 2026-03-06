@@ -29,6 +29,20 @@
 핵심 규칙 두 가지를 기억하세요:
 
 - **학습 데이터에만 적용**: 테스트 데이터는 원본 그대로 평가해야 공정합니다
+
+> 📊 **그림 1**: 데이터 증강의 적용 범위 — 학습 vs 테스트
+
+```mermaid
+flowchart LR
+    A["원본 데이터셋"] --> B{"학습 / 테스트?"}
+    B -->|학습| C["증강 적용<br/>Flip, Crop, Color..."]
+    B -->|테스트| D["증강 없음<br/>원본 그대로"]
+    C --> E["변형된 이미지<br/>매 에포크 다르게"]
+    E --> F["모델 학습"]
+    D --> G["Resize + Normalize만"]
+    G --> H["모델 평가"]
+```
+
 - **의미를 바꾸지 않는 변형만**: 고양이를 뒤집어도 고양이이지만, 숫자 6을 뒤집으면 9가 됩니다
 
 ### 2. 기본 증강 — torchvision transforms
@@ -76,6 +90,23 @@ basic_augmentation = transforms.Compose([
 | RandomErasing | 가려진 객체 대응 | Cutout과 유사한 효과 |
 
 ### 3. Albumentations — 더 빠르고, 더 다양하게
+
+> 📊 **그림 2**: 증강 기법 분류 체계
+
+```mermaid
+graph TD
+    ROOT["데이터 증강 기법"] --> GEO["기하학적 변환"]
+    ROOT --> COLOR["색상 변환"]
+    ROOT --> ERASE["삭제 기반"]
+    ROOT --> MIX["혼합 기반"]
+    ROOT --> AUTO["자동 증강"]
+    GEO --> G1["Flip, Crop<br/>Rotation, Affine"]
+    COLOR --> C1["ColorJitter<br/>Grayscale, Blur"]
+    ERASE --> E1["RandomErasing<br/>CoarseDropout"]
+    MIX --> M1["MixUp<br/>CutMix"]
+    AUTO --> A1["AutoAugment<br/>RandAugment"]
+```
+
 
 **Albumentations**는 데이터 증강 전용 라이브러리로, torchvision보다 **빠르고 다양한 변환**을 제공합니다. 특히 객체 탐지와 세그멘테이션에서는 바운딩 박스와 마스크까지 함께 변환해주는 기능이 강력합니다.
 
@@ -135,6 +166,24 @@ torchvision vs Albumentations 비교:
 
 **AutoAugment(2019)**는 강화 학습으로 최적의 증강 정책을 찾지만, 탐색 비용이 매우 큽니다(5,000 GPU 시간). 이를 개선한 **RandAugment(2020)**는 단 두 개의 하이퍼파라미터 — **N**(적용할 변환 개수)과 **M**(변환 강도) — 만으로 강력한 증강을 구현합니다.
 
+> 📊 **그림 3**: AutoAugment vs RandAugment 동작 방식 비교
+
+```mermaid
+flowchart TD
+    subgraph AA["AutoAugment"]
+        A1["14개 변환 후보"] --> A2["강화학습으로<br/>최적 정책 탐색"]
+        A2 --> A3["5000 GPU 시간"]
+        A3 --> A4["고정된 증강 정책"]
+    end
+    subgraph RA["RandAugment"]
+        R1["14개 변환 후보"] --> R2["N개 랜덤 선택"]
+        R2 --> R3["M 강도로 적용"]
+        R3 --> R4["매번 다른 조합"]
+    end
+    AA -.->|"단순화"| RA
+```
+
+
 ```python
 from torchvision import transforms
 
@@ -170,6 +219,23 @@ randaug_transform = transforms.Compose([
 
 > 새 이미지 = 이미지A의 일부 + 이미지B의 나머지 영역
 > 새 라벨 = 면적 비율에 따라 혼합
+
+> 📊 **그림 4**: MixUp vs CutMix 동작 원리 비교
+
+```mermaid
+flowchart LR
+    subgraph MIXUP["MixUp"]
+        MA["이미지 A"] --> MM["픽셀 단위 혼합<br/>lambda x A + (1-lambda) x B"]
+        MB["이미지 B"] --> MM
+        MM --> MR["반투명하게<br/>겹친 이미지"]
+    end
+    subgraph CUTMIX["CutMix"]
+        CA["이미지 A"] --> CM["영역 잘라 붙이기<br/>A 일부 + B 나머지"]
+        CB["이미지 B"] --> CM
+        CM --> CR["패치가 합성된<br/>이미지"]
+    end
+```
+
 
 ```python
 import torch

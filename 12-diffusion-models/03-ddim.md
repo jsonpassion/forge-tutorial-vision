@@ -25,6 +25,21 @@ Stable Diffusion에서 이미지를 생성할 때 "Euler", "DPM++ 2M Karras" 같
 
 DDPM의 생성 과정은 마르코프 체인이기 때문에, 각 단계가 **바로 직전 단계에만 의존**합니다. 즉, $x_{999}$를 거치지 않고 $x_{1000}$에서 $x_{998}$로 직접 갈 수 없죠. 이것이 1000 스텝을 모두 거쳐야 하는 근본적인 이유입니다.
 
+> 📊 **그림 1**: DDPM vs DDIM 샘플링 경로 비교
+
+```mermaid
+flowchart LR
+    subgraph DDPM["DDPM: 1000 스텝 전부"]
+        direction LR
+        A1["x_1000"] --> A2["x_999"] --> A3["x_998"] --> A4["..."] --> A5["x_1"] --> A6["x_0"]
+    end
+    subgraph DDIM["DDIM: 50 스텝만 선택"]
+        direction LR
+        B1["x_1000"] --> B2["x_980"] --> B3["x_960"] --> B4["..."] --> B5["x_20"] --> B6["x_0"]
+    end
+```
+
+
 ### 개념 2: DDIM — 결정론적 샘플링
 
 Song et al.(2020)의 핵심 통찰: **전방 프로세스를 비마르코프(Non-Markovian)로 일반화하면, 더 적은 스텝으로 동일한 결과를 얻을 수 있다!**
@@ -42,6 +57,24 @@ DDIM은 $\sigma_t = 0$으로 설정하여 **결정론적(deterministic)**으로 
 **왜 이것이 스텝을 줄이는 데 도움이 될까요?**
 
 결정론적 과정은 **ODE(상미분방정식)**로 해석할 수 있고, ODE를 푸는 수치적 기법(Euler method 등)은 큰 스텝 사이즈에서도 합리적인 결과를 줍니다. 그래서 1000 스텝을 50 스텝으로 건너뛰어도 괜찮은 거죠.
+
+> 📊 **그림 2**: DDIM 단일 스텝 업데이트 흐름
+
+```mermaid
+flowchart TD
+    X["현재 x_t"] --> EP["노이즈 예측<br/>epsilon_theta(x_t, t)"]
+    X --> PRED["x_0 예측<br/>(x_t에서 노이즈 제거)"]
+    EP --> PRED
+    PRED --> DIR["방향 벡터 계산<br/>sqrt(1 - alpha_prev) * epsilon"]
+    PRED --> SCALE["스케일링<br/>sqrt(alpha_prev) * x_0"]
+    SCALE --> NEXT["다음 x_(t-1)"]
+    DIR --> NEXT
+    ETA{"eta 값?"} --> |"eta = 0"| DET["결정론적<br/>노이즈 없음"]
+    ETA --> |"eta > 0"| STO["확률적<br/>노이즈 추가"]
+    DET --> NEXT
+    STO --> NEXT
+```
+
 
 > ⚠️ **흔한 오해**: "DDIM은 DDPM과 다른 모델이다" — 아닙니다! DDIM은 **DDPM으로 학습한 모델을 그대로 사용**합니다. 달라지는 것은 생성(샘플링) 방법뿐입니다. 학습은 동일하고, 추론만 바뀌는 거예요.
 
@@ -69,6 +102,20 @@ DPM-Solver(2022)는 Diffusion ODE를 **고차 수치해법**으로 정확하게 
 > 🔥 **실무 팁**: Stable Diffusion 실전에서는 **DPM++ 2M Karras**가 품질과 속도의 균형이 가장 좋다는 것이 커뮤니티의 공통된 의견입니다. 20 스텝이면 충분히 좋은 결과를 얻을 수 있어요. [Stable Diffusion 샘플러 가이드](../13-stable-diffusion/04-samplers.md)에서 더 자세히 다룰 예정입니다.
 
 ### 개념 5: 최신 가속 기법들
+
+> 📊 **그림 3**: 샘플링 가속 기법의 발전 흐름
+
+```mermaid
+flowchart LR
+    A["DDPM 2020<br/>1000 스텝"] --> B["DDIM 2020<br/>50 스텝"]
+    B --> C["DPM-Solver 2022<br/>15-25 스텝"]
+    C --> D["DPM-Solver++ 2022<br/>15-25 스텝"]
+    D --> E["Consistency Model 2023<br/>1-2 스텝"]
+    B --> F["Rectified Flow 2023<br/>직선 경로"]
+    F --> G["FLUX / SD3<br/>실전 적용"]
+    D --> G
+```
+
 
 **Consistency Models (2023)**: Song et al.이 제안한 모델로, Diffusion ODE의 궤적 위 임의의 두 점이 동일한 시작점으로 매핑된다는 "일관성(consistency)" 성질을 학습합니다. 이론적으로 **1~2 스텝**만으로 이미지를 생성할 수 있어요.
 
@@ -156,6 +203,24 @@ DDIM이 결정론적이라는 것은 매우 유용한 성질을 만듭니다:
 **잠재 공간 보간**: 두 시드 사이를 보간하면 이미지가 부드럽게 변환됩니다. [VAE의 잠재 공간 보간](../11-generative-basics/02-vae.md)과 개념적으로 비슷하지만, 훨씬 고품질이에요.
 
 ### ODE vs SDE — 두 가지 관점
+
+> 📊 **그림 4**: ODE vs SDE 관점의 Diffusion 생성 과정
+
+```mermaid
+flowchart TD
+    START["초기 노이즈 x_T"] --> SPLIT{"생성 방식 선택"}
+    SPLIT --> |"SDE 관점"| SDE["확률적 미분방정식<br/>DDPM"]
+    SPLIT --> |"ODE 관점"| ODE["상미분방정식<br/>DDIM"]
+    SDE --> S1["매번 다른 경로"]
+    SDE --> S2["다양성 높음"]
+    SDE --> S3["가속 어려움"]
+    ODE --> O1["고정된 경로"]
+    ODE --> O2["재현 가능"]
+    ODE --> O3["고차 해법으로 가속"]
+    S1 --> RESULT["생성된 이미지 x_0"]
+    O1 --> RESULT
+```
+
 
 Diffusion 모델의 생성 과정은 두 가지 관점으로 볼 수 있습니다:
 

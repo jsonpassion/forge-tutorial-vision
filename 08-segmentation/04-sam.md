@@ -50,6 +50,31 @@ SAM의 3가지 혁신:
 
 ### 2. SAM의 아키텍처 — 세 부분의 협업
 
+> 📊 **그림 1**: SAM의 3대 구성 요소와 처리 흐름
+
+```mermaid
+flowchart LR
+    subgraph IE["이미지 인코더"]
+        A["입력 이미지"] --> B["ViT-H/L/B"]
+        B --> C["이미지 임베딩"]
+    end
+    subgraph PE["프롬프트 인코더"]
+        D["포인트/박스"] --> E["위치 인코딩"]
+        F["마스크"] --> G["합성곱"]
+        E --> H["프롬프트 임베딩"]
+        G --> H
+    end
+    subgraph MD["마스크 디코더"]
+        I["Transformer<br/>디코더 x2"] --> J["마스크 1"]
+        I --> K["마스크 2"]
+        I --> L["마스크 3"]
+        I --> M["IoU 점수"]
+    end
+    C --> I
+    H --> I
+```
+
+
 SAM은 세 개의 구성 요소로 이루어져 있습니다:
 
 **1) Image Encoder (이미지 인코더)**
@@ -141,6 +166,18 @@ SAM의 성능을 가능하게 한 것은 아키텍처만이 아닙니다. **SA-1
 
 **데이터 엔진(Data Engine) — 3단계 부트스트래핑**:
 
+> 📊 **그림 2**: SA-1B 데이터 엔진의 3단계 부트스트래핑 과정
+
+```mermaid
+flowchart TD
+    S1["Stage 1: 보조 수동<br/>라벨러 + 초기 SAM"] -->|"12만 이미지<br/>430만 마스크"| S2["Stage 2: 반자동<br/>SAM 예측 + 라벨러 보완"]
+    S2 -->|"30만 이미지<br/>1,020만 마스크"| S3["Stage 3: 전자동<br/>격자 포인트로 자동 생성"]
+    S3 -->|"1,100만 이미지<br/>11억 마스크"| SA["SA-1B 데이터셋"]
+    SA -->|"더 나은 학습"| SAM["더 강한 SAM"]
+    SAM -->|"더 빠른 라벨링"| S1
+```
+
+
 1. **Stage 1 — 보조 수동 (Assisted Manual)**: 전문 라벨러가 초기 SAM의 도움을 받아 수동 라벨링. 12만 이미지에서 430만 마스크 생성. 라벨러가 한 이미지에서 30초 이상 걸리면 다음으로 넘어가는 규칙 적용
 2. **Stage 2 — 반자동 (Semi-Automatic)**: SAM이 먼저 예측한 뒤, 라벨러는 놓친 객체만 추가. 30만 이미지에서 1,020만 마스크 생성
 3. **Stage 3 — 전자동 (Fully Automatic)**: SAM이 정규 격자의 포인트 프롬프트로 자동 생성. 1,100만 이미지에서 **11억 마스크** 생성
@@ -164,6 +201,26 @@ SAM의 성능을 가능하게 한 것은 아키텍처만이 아닙니다. **SA-1
 | 이미지 성능 | 기준선 | **6배 빠르면서 더 정확** |
 
 SAM 2가 비디오에서 일관된 세그멘테이션을 유지하는 비결은 **메모리 뱅크(Memory Bank)**입니다. 이전 프레임에서 예측한 마스크 정보를 저장해두고, 현재 프레임 처리 시 참조합니다. 마치 영화를 볼 때 "아까 그 캐릭터"를 기억하며 추적하는 것과 같죠.
+
+> 📊 **그림 3**: SAM 2의 비디오 세그멘테이션 — 메모리 뱅크 메커니즘
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자
+    participant F1 as 프레임 1
+    participant MB as 메모리 뱅크
+    participant F2 as 프레임 2
+    participant FN as 프레임 N
+    U->>F1: 포인트 프롬프트 제공
+    F1->>F1: 이미지 인코딩 + 마스크 예측
+    F1->>MB: 마스크 정보 저장
+    MB->>F2: 이전 마스크 참조
+    F2->>F2: 마스크 전파 + 예측
+    F2->>MB: 업데이트
+    MB->>FN: 누적된 메모리 참조
+    FN->>FN: 일관된 세그멘테이션 유지
+```
+
 
 ```python
 # SAM 2 사용 예시 (개념적 코드)
@@ -212,6 +269,20 @@ SAM 2가 비디오에서 일관된 세그멘테이션을 유지하는 비결은 
 ### 5. SAM 생태계의 확장
 
 SAM의 공개 이후 다양한 파생 프로젝트들이 등장했습니다:
+
+> 📊 **그림 4**: SAM 생태계 — 파생 프로젝트 관계도
+
+```mermaid
+graph TD
+    SAM["SAM<br/>범용 세그멘테이션"] --> GSAM["Grounded SAM<br/>텍스트 기반 탐지+분할"]
+    SAM --> FSAM["FastSAM<br/>YOLO 기반 50배 가속"]
+    SAM --> ESAM["EfficientSAM<br/>지식 증류 경량화"]
+    SAM --> MSAM["MedSAM<br/>의료 영상 특화"]
+    SAM --> HQSAM["SAM-HQ<br/>고품질 마스크"]
+    SAM --> SAM2["SAM 2<br/>이미지 + 비디오"]
+    GD["Grounding DINO<br/>텍스트 기반 탐지"] --> GSAM
+```
+
 
 - **Grounded SAM**: [DETR 계열](../07-object-detection/05-detr.md)인 Grounding DINO(텍스트 기반 탐지) + SAM → "빨간 자동차"라고 말하면 탐지+분할을 한 번에
 - **FastSAM**: YOLO 기반으로 SAM을 50배 빠르게 근사
